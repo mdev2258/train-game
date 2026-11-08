@@ -252,7 +252,7 @@ body.dragging .yrow.over{border-color:var(--good);background:#eefaf3;transform:s
 body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .yrow.bump{animation:bump .45s ease}
 @keyframes bump{30%{transform:scale(1.03);border-color:var(--good)}}
-.ghost{position:fixed;left:0;top:0;width:46px;z-index:70;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(29,43,69,.35))}
+.drag-ghost{position:fixed;left:0;top:0;width:46px;z-index:70;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(29,43,69,.35))}
 .yhint{margin:0;font-size:14px;color:var(--mute)}
 
 /* tabs */
@@ -265,7 +265,7 @@ body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .tabs button.on svg{fill:#ffe3a6}
 .badge{font-size:10px;background:var(--bad);color:#fff;border-radius:8px;padding:0 5px;margin-left:2px}
 
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom, 0px));z-index:50;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.toast{pointer-events:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom, 0px));z-index:50;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 
 /* chooser */
 .hero{display:flex;flex-direction:column;gap:10px;padding-top:6px}
@@ -566,6 +566,8 @@ let EMIT = { modal(){}, toast(){} }; // UI hooks
 function simDay(s){
   const d=dateOf(s.day),m=d.getUTCMonth(),dt=d.getUTCDate(),dow=d.getUTCDay();
   const op=OPS[s.op],yrs=s.day/364;
+  // carriage orders
+  if(s.carOrders&&s.carOrders.length){s.pool=s.pool||{};for(const o of s.carOrders){if(--o.days<=0){s.pool[o.cls]=(s.pool[o.cls]||0)+1;news(s,`New Class ${o.cls} carriage delivered to the siding. Couple it up in the yard.`,'good')}}s.carOrders=s.carOrders.filter(o=>o.days>0)}
   // deliveries and repairs
   for(const u of s.units){
     if(u.st==='order'){ if(--u.days<=0){u.st=u.route?'active':'depot';news(s,`New ${C[u.cls].builder.split(' /')[0]} unit ${unitName(u)} delivered${u.route?' and in service':' to the depot'}.`,'good');unlock(s,'first_new');s.flags.newCount=(s.flags.newCount||0)+1;if(s.flags.newCount>=5)unlock(s,'new5')} }
@@ -921,7 +923,7 @@ function unitRow(u){
 }
 function renderFleet(){
   const seg=`<div class="filters"><button data-a="fleetv" data-v="list" class="${ui.fleetView!=='yard'?'on':''}">Trains</button><button data-a="fleetv" data-v="yard" class="${ui.fleetView==='yard'?'on':''}">Coupling yard</button></div>`;
-  if(ui.fleetView==='yard'){main.innerHTML=`<section class="sec"><div class="sec-head"><h2>Coupling yard</h2><span class="mute" style="font-size:13px">Cash ${money(S.cash)}</span></div>${seg}<p class="yhint">Drag a middle carriage onto another train of the same class to make it longer, or into the siding to keep it spare. Driving cars stay put. 2 to 12 carriages per train.</p></section>${yardHTML()}`;return}
+  if(ui.fleetView==='yard'){main.innerHTML=`<section class="sec"><div class="sec-head"><h2>Coupling yard</h2><span class="mute" style="font-size:13px">Cash ${money(S.cash)}</span></div>${seg}<p class="yhint">Drag a middle carriage onto another train of the same class to make it longer, or into the siding to keep it spare. Need more? Buy single carriages for any class you run. Driving cars stay put; 2 to 12 carriages per train.</p></section>${yardHTML()}`;return}
   renderFleetList();main.insertAdjacentHTML('afterbegin',`<section class="sec">${seg}</section>`);
 }
 function renderFleetList(){
@@ -1329,6 +1331,10 @@ window.addEventListener('resize',()=>{if(ui.tab==='map'){sizeMap();applyVB()}});
 
 /* ---------- Coupling yard (drag carriages between trains) ---------- */
 const MAXCARS=12,MINCARS=2;
+const carNewPrice=cls=>{const c=C[cls];return c.newPrice?Math.round(c.newPrice*1e6/c.cars*1.15/1000)*1000:null};
+const carUsedPrice=cls=>{const c=C[cls];return c.usedPrice?Math.round(c.usedPrice*1e6/c.cars*1.1/1000)*1000:null};
+const carDays=cls=>Math.max(30,Math.round(C[cls].deliv*.5));
+const carSellPrice=cls=>{const c=C[cls];return Math.round((c.usedPrice?c.usedPrice*1e6:c.newPrice*1e6*.5)/c.cars*.6/1000)*1000};
 function yardCar(cls,t){return `<svg class="ycs" viewBox="-1 0 82 63" aria-hidden="true">${sideCar(t,cls,LIV[S.op],80,0,false)}</svg>`}
 function yardHTML(){
   const byC={},pool=S.pool||{};
@@ -1340,10 +1346,13 @@ function yardHTML(){
       const lock=u.st==='repair'||u.st==='refurb',r=u.route?routeOf(S,u.route):null;
       return `<div class="yrow${lock?' lock':''}" data-drop="u:${u.id}" data-cls="${k}"><div class="yhead"><span class="no">${unitName(u)}</span><span class="mute">${carsN(u)}-car · ${seatsOf(u)} seats${r?' · '+r.fc+'–'+r.tc:' · spare'}${lock?' · in the works':''}</span></div>
         <div class="ycars">${carsOfUnit(u).map(t=>{const d=t==='M'&&!lock;return `<span class="ycar${d?' drag':''}"${d?` data-from="u:${u.id}"`:''}>${yardCar(k,t)}</span>`}).join('')}</div></div>`}).join('');
+    const np=carNewPrice(k),up=carUsedPrice(k),onOrder=(S.carOrders||[]).filter(o=>o.cls===k);
+    const buy=`<div class="btns">${np?`<button class="btn sm" data-a="buycar" data-v="${k}|new" ${S.cash<np?'disabled':''}>New carriage · ${money(np)}<small>Arrives in about ${carDays(k)} days</small></button>`:''}${up?`<button class="btn sm ${np?'ghost':''}" data-a="buycar" data-v="${k}|used" ${S.cash<up?'disabled':''}>Second-hand carriage · ${money(up)}<small>In the siding tomorrow</small></button>`:''}</div>`;
     return `<section class="sec" id="yc-${k}"><div class="group-head"><span>Class ${k} ${c.name}</span><span class="mute" style="font-size:13px;font-weight:500">${per} seats a carriage</span></div>
+      ${buy}
       <div class="list">${rows}
-      <div class="yrow pool" data-drop="p:${k}" data-cls="${k}"><div class="yhead"><span class="subhead">Spare carriages</span><span class="mute">${pn?`${pn} in the siding · ${money(pn*700)} a day to keep`:'Drop a carriage here to store it'}</span></div>
-      <div class="ycars">${pn?Array.from({length:pn},()=>`<span class="ycar drag" data-from="p:${k}">${yardCar(k,'M')}</span>`).join(''):'<span class="yempty">Empty siding</span>'}</div></div></div></section>`;
+      <div class="yrow pool" data-drop="p:${k}" data-cls="${k}"><div class="yhead"><span class="subhead">Spare carriages</span><span class="mute">${pn?`${pn} in the siding · ${money(pn*700)} a day to keep`:'Drop a carriage here to store it'}${onOrder.length?` · ${onOrder.length} on order (${Math.min(...onOrder.map(o=>o.days))}d)`:''}</span></div>
+      <div class="ycars">${pn?Array.from({length:pn},()=>`<span class="ycar drag" data-from="p:${k}">${yardCar(k,'M')}</span>`).join(''):'<span class="yempty">Empty siding</span>'}</div>${pn?`<div class="btns"><button class="btn sm ghost" data-a="sellcar" data-v="${k}">Sell a spare carriage<small>${money(carSellPrice(k))}</small></button></div>`:''}</div></div></section>`;
   }).join('');
 }
 function moveCarriage(from,to,cls){
@@ -1366,7 +1375,7 @@ document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.
 document.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.id)return;
   if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;drag.on=true;
-    const g=drag.el.cloneNode(true);g.className='ghost';document.body.appendChild(g);drag.g=g;
+    const g=drag.el.cloneNode(true);g.className='drag-ghost';document.body.appendChild(g);drag.g=g;
     drag.el.classList.add('lifted');document.body.classList.add('dragging');
     document.querySelectorAll('[data-drop]').forEach(t=>{const ok=t.dataset.cls===drag.cls&&t.dataset.drop!==drag.from&&!t.classList.contains('lock');t.classList.toggle('valid',ok);t.classList.toggle('nope',!ok)});}
   e.preventDefault();
@@ -1508,6 +1517,11 @@ const A={
  shopf:v=>{ui.shopF=v;renderMain()},
  fleetf:v=>{ui.fleetF=v;renderMain()},
  fleetv:v=>{ui.fleetView=v;renderMain()},
+ buycar:v=>{const [cls,kind]=v.split('|');const p=kind==='new'?carNewPrice(cls):carUsedPrice(cls);if(!p||S.cash<p)return;S.cash-=p;S.pool=S.pool||{};
+   if(kind==='new'){S.carOrders=S.carOrders||[];S.carOrders.push({cls,days:carDays(cls)});news(S,`Ordered a new Class ${cls} carriage from ${C[cls].builder}.`,'');toast(`Carriage ordered. It'll arrive in the siding in about ${carDays(cls)} days.`)}
+   else{S.pool[cls]=(S.pool[cls]||0)+1;news(S,`Bought a second-hand Class ${cls} carriage.`,'');toast('Carriage in the siding. Drag it onto a train.')}
+   save();renderTop();const y=scrollY;renderMain();scrollTo(0,y)},
+ sellcar:v=>{S.pool=S.pool||{};if(!(S.pool[v]>0))return;const p=carSellPrice(v);S.pool[v]--;S.cash+=p;toast(`Spare carriage sold for ${money(p)}.`);save();renderTop();const y=scrollY;renderMain();scrollTo(0,y)},
  yard:v=>{ui.fleetView='yard';ui.tab='fleet';ui.sheet=null;renderAll();const el=document.getElementById('yc-'+v);if(el)el.scrollIntoView({block:'start'});else scrollTo(0,0)},
  openroute:v=>{const r=routeOf(S,v);if(!r||S.cash<r.cost*1e6)return;S.cash-=r.cost*1e6;r.open=true;r.sat=72;news(S,`Bid won: ${r.from} – ${r.to} is yours. Get some trains on it.`,'good');unlock(S,'expand');save();ui.sheet={t:'route',id:r.id};renderAll()},
  choice:v=>{const m=ui.modal;if(!m)return;const c=m.choices[+v];ui.modal=null;$('#modal').innerHTML='';try{c.fn&&c.fn()}catch(e){console.error(e)}if(S)checkAch(S);save();showModal();if(S)tickRender();},
