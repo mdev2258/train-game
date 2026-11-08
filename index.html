@@ -21,9 +21,7 @@
   --good:#47c486;
   --bad:#ff5d55;
   --warn:#f0c64a;
-  --dc:#c99bff;          /* third rail */
-  --ac:#5fb0ff;          /* 25 kV overhead */
-  --diesel:#d9a46c;      /* diesel */
+  --route:#7fb6ee;       /* your lines on the map */
   --sea:#0a1119;         /* map sea */
   --land:#1c2430;
   --land-far:#131920;
@@ -99,9 +97,7 @@ main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:18px;p
 .strip .code:last-child{text-align:right}
 .track{position:relative;height:12px;border-radius:2px}
 .track::before{content:"";position:absolute;left:0;right:0;top:5px;height:2px;background:var(--line)}
-.track.ac::before{background:linear-gradient(90deg,var(--ac) 0 60%,transparent 60%) 0 0/8px 2px repeat-x;opacity:.7}
-.track.dc::before{background:var(--dc);opacity:.55}
-.track.none::before{background:var(--diesel);opacity:.45}
+.track::before{background:var(--route);opacity:.5}
 .pip{position:absolute;top:1px;width:14px;height:10px;margin-left:-7px;border-radius:3px;background:var(--amber);box-shadow:0 0 6px rgba(255,178,46,.5)}
 .pip.down{background:var(--bad);box-shadow:none}
 .strip.idle .code{color:var(--bad)}
@@ -119,7 +115,6 @@ button.card:active{background:var(--panel-2)}
 .rt-title .arrow{color:var(--mute);font-weight:500}
 .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--mute)}
 .tag{font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid currentColor;white-space:nowrap}
-.tag.dc{color:var(--dc)} .tag.ac{color:var(--ac)} .tag.none,.tag.diesel{color:var(--diesel)} .tag.dual{color:var(--ac)} .tag.bimode{color:var(--good)}
 .tag.bad{color:var(--bad)} .tag.warn{color:var(--warn)} .tag.good{color:var(--good)} .tag.plain{color:var(--mute)}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .stat{display:flex;flex-direction:column;gap:1px;min-width:0}
@@ -188,12 +183,11 @@ input[type=range]{width:100%;accent-color:var(--amber);height:28px}
 .land.far{fill:var(--land-far)}
 .other{fill:none;stroke:#334050;stroke-width:1.3px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .rl{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.rl.dc{stroke:var(--dc)} .rl.ac{stroke:var(--ac)} .rl.none{stroke:var(--diesel)}
+.rl.live{stroke:var(--route)}
 .rl.locked{stroke:var(--mute);stroke-dasharray:3 6;opacity:.7}
 .rl.idle{stroke:var(--bad);stroke-dasharray:7 6}
 .rl.halo{stroke:var(--bad);opacity:.32}
 .rl.sel{stroke:var(--ink);opacity:.9}
-.rl.wiring{stroke:var(--ac);stroke-dasharray:2 8;stroke-linecap:butt;filter:brightness(1.5)}
 .hit{fill:none;stroke:transparent;stroke-width:24px;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
 .st{fill:var(--ink);opacity:.7;pointer-events:none}
 .term{fill:var(--bg);stroke:var(--ink);stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}
@@ -276,10 +270,10 @@ const C = {};
  ['377','Electrostar','Bombardier','dc',4,240,100,3,null,0,2.6,.9,2003,22,1.5,'Roughly half of the Southern network.'],
  ['380','Desiro','Siemens','ac',4,265,100,3,null,0,3,.91,2010,22,1.5,"Strathclyde's quiet achiever."],
  ['385','AT200','Hitachi','ac',4,273,100,3.5,9,200,null,.93,2018,22,1.5,'Central Belt electric. Smooth and sensible.'],
- ['387','Electrostar','Bombardier','dual',4,223,110,3,null,0,4,.91,2015,24,1.4,"Dual-voltage: third rail or 25 kV, it doesn't mind."],
+ ['387','Electrostar','Bombardier','dual',4,223,110,3,null,0,4,.91,2015,24,1.4,'Gatwick Express regular. Big luggage racks.'],
  ['390','Pendolino','Alstom','ac',11,589,125,4,null,0,12,.9,2002,55,1.1,'Tilts round corners. Your coffee will not.'],
  ['397','Nova 2','CAF','ac',5,286,125,4,13,240,null,.92,2019,34,1.1,'125 mph over Shap with a quiet interior.'],
- ['444','Desiro','Siemens','dc',5,299,100,4,null,0,4.5,.93,2004,30,1.2,'Proper intercity seats on the third rail.'],
+ ['444','Desiro','Siemens','dc',5,299,100,4,null,0,4.5,.93,2004,30,1.2,'Proper intercity seats on a commuter budget.'],
  ['450','Desiro','Siemens','dc',4,264,100,3,null,0,3.6,.93,2003,24,1.5,'Commuter Desiro. Gets on with it.'],
  ['455','BREL 455','BREL','dc',4,316,75,1.5,null,0,0.8,.82,1982,26,1.6,'Early-80s suburban stock. Tired, but it carries a crowd.'],
  ['484','D-Train','Vivarail','dc',2,82,60,3,null,0,1.2,.8,2021,10,1.6,'Rebuilt 1978 District line stock. Its builder has since gone bust.'],
@@ -287,12 +281,12 @@ const C = {};
  ['701','Arterio','Alstom','dc',10,556,100,3.5,12,300,null,.88,2022,36,1.6,'Ordered in 2017, in service in 2024. You do the maths.'],
  ['720','Aventra','Alstom','ac',5,544,100,3,10,220,null,.9,2019,28,1.6,'Long, bright and very Essex.'],
  ['745','FLIRT','Stadler','ac',12,757,100,4,18,240,null,.94,2019,42,1.2,'Swiss-built and almost suspiciously reliable.'],
- ['755','FLIRT bi-mode','Stadler','bimode',4,229,100,3.5,8,200,null,.94,2019,26,1.3,'Has a power-pack car in the middle. Runs anywhere.'],
+ ['755','FLIRT bi-mode','Stadler','bimode',4,229,100,3.5,8,200,null,.94,2019,26,1.3,'Swiss-built, comfy, and very hard to break.'],
  ['777','Stadler 777','Stadler','dc',4,182,75,3.5,8,220,null,.94,2020,18,2.6,'Level boarding, lots of standing room, lots of yellow.'],
- ['800','IET','Hitachi','bimode',5,302,125,3,15,240,null,.92,2017,46,1.15,'Bi-mode intercity. Famous for its "ironing board" seats.'],
- ['805','Evero','Hitachi','bimode',5,301,125,4,16,300,null,.9,2025,46,1.15,'Bi-mode built for the North Wales coast.'],
- ['807','Evero','Hitachi','ac',7,453,125,4,18,300,null,.9,2025,48,1.15,'All-electric West Coast express.'],
- ['810','Aurora','Hitachi','bimode',5,300,125,4,16,260,null,.9,2025,46,1.15,'Midland bi-mode with better seats than an 800.'],
+ ['800','IET','Hitachi','bimode',5,302,125,3,15,240,null,.92,2017,46,1.15,'Hitachi intercity. Famous for its "ironing board" seats.'],
+ ['805','Evero','Hitachi','bimode',5,301,125,4,16,300,null,.9,2025,46,1.15,'Built for the North Wales coast.'],
+ ['807','Evero','Hitachi','ac',7,453,125,4,18,300,null,.9,2025,48,1.15,'West Coast express with a quiet ride.'],
+ ['810','Aurora','Hitachi','bimode',5,300,125,4,16,260,null,.9,2025,46,1.15,'Midland express with better seats than an 800.'],
 ].forEach(a=>{C[a[0]]={id:a[0],name:a[1],builder:a[2],trac:a[3],cars:a[4],seats:a[5],mph:a[6],comfort:a[7],newPrice:a[8],deliv:a[9],usedPrice:a[10],rel:a[11],year:a[12],cost:a[13]*.55,stand:a[14],blurb:a[15]}});
 
 const vis=c=>c.filter(x=>x[0]!=='~'), geo=(from,c,to)=>[from,...c.map(x=>x.replace(/^~/,'')).filter(x=>x!=='Non-stop'),to];
@@ -332,7 +326,7 @@ const OPS = {
   ],
   fleet:[['VIC-BTN','377',5],['BTN-PMH','377',2],['VIC-BOG','377',2],['LBG-UCK','170',2],['BTN-AFK','170',1],['VIC-GTW','387',3]]},
  gwr:{id:'gwr',short:'GWR',name:'Great Western Railway',hub:'London Paddington',plats:14,region:'London to Bristol, South Wales, Devon and Cornwall',diff:'Medium',cash:32,target:87,ok:0.1,accent:'#2f7d6d',
-  blurb:'Bi-mode intercity on the Great Western main line, plus the long haul to Penzance.',
+  blurb:'Fast intercity on the Great Western main line, plus the long haul to Penzance.',
   festival:{m:5,d:23,route:'PAD-PNZ',mult:1.4,days:5,name:'Glastonbury (via Castle Cary)'},
   routes:[
    R('PAD','London Paddington','BRI','Bristol Temple Meads',118,125,'ac','intercity',1.1,['Reading','Didcot Parkway','Swindon','Chippenham','Bath Spa']),
@@ -435,7 +429,7 @@ const ACH = [
  ['expand','New horizons','Open a new route.'],
  ['ppm95','Right time railway','Finish a period with PPM of 95% or better.'],
  ['sat85','Five-star feedback','Reach 85% passenger satisfaction.'],
- ['electrify','Under the wires','Finish an electrification scheme.'],
+ ['new5','Factory fresh','Take delivery of five brand-new trains.'],
  ['no_pacer','Pacer-free','Get rid of every Pacer you own.'],
  ['fleet40','Big fleet','Own 40 units.'],
  ['cash100','Nine figures','Have £100m in the bank.'],
@@ -471,12 +465,7 @@ function baseFare(r){
   const f = r.kind==='intercity'?5+.2*r.mi : r.kind==='leisure'?3+.2*r.mi : r.kind==='regional'?2+.14*r.mi : 2+.16*r.mi;
   return f*(r.fareBoost||1);
 }
-function compat(trac,elec){
-  if(trac==='diesel'||trac==='bimode')return true;
-  if(elec==='none')return false;
-  if(trac==='dual')return true;
-  return trac===elec;
-}
+
 function tripH(c,r){return r.mi/(Math.min(c.mph,r.mph)*.62)+.4}
 function tripsPerDay(c,r){return clamp(Math.floor(OP_HOURS/tripH(c,r)),1,36)}
 const unitName=u=>u.cls+' '+String(u.n).padStart(3,'0');
@@ -496,14 +485,14 @@ function routeUnits(s,r,all){return s.units.filter(u=>u.route===r.id&&(all?u.st!
 
 function newGame(opId){
   const op=OPS[opId];
-  const s={v:1,op:opId,day:0,cash:op.cash*1e6,units:[],routes:[],mods:[],projects:[],news:[],strikes:0,periods:0,ach:{},flags:{},nums:{},uid:1,hist:[],last:null,over:null,cd:{},reports:[],period:freshPeriod(),best:{cash:op.cash*1e6,ppm:0}};
+  const s={v:1,op:opId,day:0,cash:op.cash*1e6,units:[],routes:[],mods:[],news:[],strikes:0,periods:0,ach:{},flags:{},nums:{},uid:1,hist:[],last:null,over:null,cd:{},reports:[],period:freshPeriod(),best:{cash:op.cash*1e6,ppm:0}};
   op.routes.forEach(rd=>s.routes.push(Object.assign({},rd,{calls:rd.calls.slice(),open:true,fare:1,sat:70,ppm:92,t:null})));
   op.exp.forEach(rd=>s.routes.push(Object.assign({},rd,{calls:rd.calls.slice(),open:false,fare:1,sat:70,ppm:92,t:null})));
   op.fleet.forEach(([rid,cls,n])=>{for(let i=0;i<n;i++)addUnit(s,cls,{route:rid,built:C[cls].year+rint(0,3)})});
   let est=0,run=0;
   s.routes.forEach(r=>{
     if(r.locked)return;
-    let seats=0,cap=0; routeUnits(s,r).forEach(u=>{const c=C[u.cls],t=tripsPerDay(c,r);seats+=t*c.seats;cap+=t*c.seats*c.stand;run+=t*r.mi*c.cost*(c.trac==='bimode'&&r.elec!=='none'?.75:1)+c.cars*700});
+    let seats=0,cap=0; routeUnits(s,r).forEach(u=>{const c=C[u.cls],t=tripsPerDay(c,r);seats+=t*c.seats;cap+=t*c.seats*c.stand;run+=t*r.mi*c.cost+c.cars*700});
     r.demand=Math.round(seats*r.load/100)*100;
     est+=Math.min(r.demand,cap)*baseFare(r);
   });
@@ -516,7 +505,7 @@ function news(s,text,tone){s.news.unshift({day:s.day,text,tone:tone||''});if(s.n
 function addMod(s,m){s.mods.push(m)}
 function modMul(s,kind,r){let v=1;for(const m of s.mods)if(m.kind===kind&&hit(m,r))v*=m.v;return v}
 function modSum(s,kind,r){let v=0;for(const m of s.mods)if(m.kind===kind&&hit(m,r))v+=m.v;return v}
-function hit(m,r){return m.route==='*'||m.route===r.id||(m.route==='dc'&&r.elec==='dc')}
+function hit(m,r){return m.route==='*'||m.route===r.id}
 function dayRev(s){const h=s.hist.slice(-7);return h.length?Math.max(1.5e5,h.reduce((a,b)=>a+b.rev,0)/h.length):3e5}
 
 let EMIT = { modal(){}, toast(){} }; // UI hooks
@@ -524,13 +513,11 @@ let EMIT = { modal(){}, toast(){} }; // UI hooks
 function simDay(s){
   const d=dateOf(s.day),m=d.getUTCMonth(),dt=d.getUTCDate(),dow=d.getUTCDay();
   const op=OPS[s.op],yrs=s.day/364;
-  // deliveries, repairs, projects
+  // deliveries and repairs
   for(const u of s.units){
-    if(u.st==='order'){ if(--u.days<=0){u.st=u.route?'active':'depot';news(s,`New ${C[u.cls].builder.split(' /')[0]} unit ${unitName(u)} delivered${u.route?' and in service':' to the depot'}.`,'good');unlock(s,'first_new')} }
+    if(u.st==='order'){ if(--u.days<=0){u.st=u.route?'active':'depot';news(s,`New ${C[u.cls].builder.split(' /')[0]} unit ${unitName(u)} delivered${u.route?' and in service':' to the depot'}.`,'good');unlock(s,'first_new');s.flags.newCount=(s.flags.newCount||0)+1;if(s.flags.newCount>=5)unlock(s,'new5')} }
     else if(u.st==='repair'||u.st==='refurb'){ if(--u.days<=0){ if(u.st==='refurb')news(s,`${unitName(u)} is back from refurbishment, smelling of new carpet.`,'good'); u.st=u.route?'active':'depot'; } }
   }
-  for(const p of s.projects){ if(--p.days<=0){const r=routeOf(s,p.route);r.elec='ac';news(s,`Wires energised: ${r.from} – ${r.to} is now 25 kV electrified.`,'good');unlock(s,'electrify')} }
-  s.projects=s.projects.filter(p=>p.days>0);
   seasonal(s,d);
   if(!s.over&&chance(.1))randomEvent(s,d);
 
@@ -541,20 +528,19 @@ function simDay(s){
     const act=routeUnits(s,r);
     let seatCap=0,cap=0,cw=0,relS=0,rc=0;
     for(const u of act){const c=C[u.cls],t=tripsPerDay(c,r);seatCap+=t*c.seats;cap+=t*c.seats*c.stand;cw+=(c.comfort+u.cb)*t*c.seats;relS+=u.rel;
-      if(!xmas){const mi=t*r.mi;u.miles+=mi;rc+=mi*c.cost*(c.trac==='bimode'&&r.elec!=='none'?.75:1)}}
+      if(!xmas){const mi=t*r.mi;u.miles+=mi;rc+=mi*c.cost}}
     for(const u of routeUnits(s,r,true))rc+=C[u.cls].cars*700;
     const comfort=seatCap?cw/seatCap:0;
     let dem=r.demand*(1+.02*yrs)*SEASON[m]*dowMult(r.kind,dow)*Math.pow(r.fare,-1.15)*(.7+.6*r.sat/100)*(.8+.3*Math.min(1,seatCap/r.demand))*modMul(s,'demand',r);
     if(bh)dem*=r.kind==='commuter'?.55:r.kind==='leisure'?1.4:1.05;
     if(boxing)dem*=.3;
-    if(s.projects.some(p=>p.route===r.id))dem*=.9;
     if(xmas)dem=0;
     const carried=Math.min(dem,cap), load=seatCap?dem/seatCap:0;
     const rr=carried*baseFare(r)*r.fare*modMul(s,'revenue',r);
     let fails=0;
     if(!xmas)for(const u of act){
       if(chance((1-u.rel)*.045)){u.st='repair';u.days=rint(2,6);fails++;rc+=rint(60,220)*1000;
-        news(s,pick([`${unitName(u)} failed near ${pick(r.calls)}. Passengers decanted.`,`Door fault on ${unitName(u)} at ${pick(r.calls)}.`,`${unitName(u)} lost traction power near ${pick(r.calls)}.`,`${unitName(u)} taken out of service at ${pick(r.calls)} with a brake fault.`]),'bad')}
+        news(s,pick([`${unitName(u)} failed near ${pick(r.calls)}. Passengers decanted.`,`Door fault on ${unitName(u)} at ${pick(r.calls)}.`,`${unitName(u)} broke down near ${pick(r.calls)}.`,`${unitName(u)} taken out of service at ${pick(r.calls)} with a brake fault.`]),'bad')}
       u.rel=Math.max(.55,u.rel-.00006);
     }
     let ppm;
@@ -645,16 +631,15 @@ const EVENTS=[
    {label:'Hire rail replacement buses',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'demand',route:r.id,v:.75,days:2});addMod(s,{kind:'sat',route:r.id,v:-4,days:3});news(s,`Rail replacement buses on ${r.from} – ${r.to}. Nobody likes them, but they turn up.`,'')}},
    {label:'Divert trains the long way',sub:'Free, but slow',fn:()=>{addMod(s,{kind:'ppm',route:r.id,v:-16,days:2});addMod(s,{kind:'demand',route:r.id,v:.85,days:2});news(s,`Diversions on ${r.from} – ${r.to}. Scenic, at least.`,'bad')}}]}}},
  {id:'overrun',w:2,cd:20,run(s){const r=busiest(s);addMod(s,{kind:'ppm',route:r.id,v:-20,days:1});addMod(s,{kind:'sat',route:r.id,v:-6,days:2});news(s,`Engineering works overran at ${pick(r.calls)}. Monday morning is ruined.`,'bad')}},
- {id:'snow',w:4,cd:12,can:(s,d)=>[11,0,1].includes(d.getUTCMonth()),run(s){const dc=openRoutes(s).some(r=>r.elec==='dc');const c=dayRev(s)*.5;
-   if(!dc){addMod(s,{kind:'ppm',route:'*',v:-10,days:2});addMod(s,{kind:'demand',route:'*',v:.85,days:2});news(s,'Snow across the network. Points freezing, speeds down.','bad');return}
-   return{kicker:'Weather',title:'Snow and ice forecast',body:'<p>Ice on the conductor rail stops third-rail trains drawing power. Overnight de-icing runs would keep the DC routes moving.</p>',choices:[
-   {label:'Run de-icing trains overnight',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'ppm',route:'*',v:-4,days:2});news(s,'De-icing trains out overnight. Third rail clear.','good')}},
-   {label:'Hope it misses us',sub:'DC routes at risk',fn:()=>{if(chance(.7)){addMod(s,{kind:'ppm',route:'dc',v:-28,days:3});addMod(s,{kind:'demand',route:'dc',v:.75,days:3});news(s,'Iced conductor rails. Third-rail trains stranded.','bad')}else news(s,'The snow missed. Lucky.','good')}}]}}},
+ {id:'snow',w:4,cd:12,can:(s,d)=>[11,0,1].includes(d.getUTCMonth()),run(s){const c=dayRev(s)*.5;
+   return{kicker:'Weather',title:'Snow and ice forecast',body:'<p>Frozen points and icy rails are on the way. Overnight gritting and de-icing runs would keep things moving.</p>',choices:[
+   {label:'Run de-icing trains overnight',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'ppm',route:'*',v:-4,days:2});news(s,'De-icing trains out overnight. Lines clear.','good')}},
+   {label:'Hope it misses us',sub:'Risky',fn:()=>{if(chance(.7)){addMod(s,{kind:'ppm',route:'*',v:-22,days:3});addMod(s,{kind:'demand',route:'*',v:.8,days:3});news(s,'Frozen points everywhere. Trains stranded.','bad')}else news(s,'The snow missed. Lucky.','good')}}]}}},
  {id:'heat',w:4,cd:12,can:(s,d)=>[5,6,7].includes(d.getUTCMonth()),run(s){addMod(s,{kind:'ppm',route:'*',v:-8,days:2});addMod(s,{kind:'demand',route:'*',v:1.05,days:2});news(s,'Heatwave. Network Rail imposes blanket speed restrictions in case the rails buckle.','bad')}},
  {id:'match',w:2,cd:14,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'demand',route:r.id,v:1.35,days:1});news(s,`Big match near ${r.to} today. Expect packed trains on ${r.from} – ${r.to}.`,'')}},
  {id:'viral',w:1,cd:60,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'sat',route:'*',v:4,days:28});news(s,`A guard's deadpan announcements on the ${r.to} line have gone viral. Everyone loves you this week.`,'good')}},
  {id:'delay',w:3,cd:40,can:s=>s.units.some(u=>u.st==='order'),run(s){const os=s.units.filter(u=>u.st==='order');const cls=pick(os).cls;const add=rint(25,60);os.filter(u=>u.cls===cls).forEach(u=>u.days+=add);news(s,`${C[cls].builder.split(' /')[0]} report software problems. Class ${cls} deliveries slip by ${add} days.`,'bad')}},
- {id:'rosco',w:2,cd:30,run(s){const opts=Object.values(C).filter(c=>c.usedPrice&&openRoutes(s).some(r=>compat(c.trac,r.elec)));if(!opts.length)return;const c=pick(opts);const p=c.usedPrice*.6*1e6;return{kicker:'Leasing company',title:`Cheap Class ${c.id} ${c.name} available`,body:`<p>A rolling stock company has a spare ${c.cars}-car Class ${c.id} coming off another contract. They'll let it go for 40% off.</p>`,choices:[
+ {id:'rosco',w:2,cd:30,run(s){const opts=Object.values(C).filter(c=>c.usedPrice);if(!opts.length)return;const c=pick(opts);const p=c.usedPrice*.6*1e6;return{kicker:'Leasing company',title:`Cheap Class ${c.id} ${c.name} available`,body:`<p>A rolling stock company has a spare ${c.cars}-car Class ${c.id} coming off another contract. They'll let it go for 40% off.</p>`,choices:[
    {label:'Buy it',sub:money(p),disabled:s.cash<p,fn:()=>{spend(s,p);const u=addUnit(s,c.id,{built:c.year+rint(0,6)});news(s,`${unitName(u)} bought cheap and sent to the depot.`,'good');unlock(s,'first_used')}},
    {label:'Pass',fn:()=>{}}]}}},
  {id:'grant',w:1,cd:80,run(s){const g=dayRev(s)*1.2;s.cash+=g;news(s,`DfT Access for All funding: ${money(g)} towards step-free stations.`,'good')}},
@@ -681,8 +666,7 @@ const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MON=['Jan','Feb','Mar','Ap
 function fmtDate(day){const d=dateOf(day);return `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`}
 function periodLabel(day){const p=Math.floor(day/28),pno=(p%13)+1,y=2027+Math.floor(p/13);return `P${pno} ${y}/${String((y+1)%100).padStart(2,'0')} · wk ${Math.floor((day%28)/7)+1}`}
 const hhmm=min=>{min=((Math.round(min)%1440)+1440)%1440;return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0')}
-const ELEC={dc:'Third rail DC',ac:'25 kV AC',none:'Diesel only'};
-const TRAC={dc:'Third rail',ac:'25 kV',dual:'Dual voltage',diesel:'Diesel',bimode:'Bi-mode'};
+const KIND={commuter:'Commuter',intercity:'Intercity',regional:'Regional',leisure:'Scenic line'};
 function stars(c){const f=Math.round(c);return `<span class="stars" aria-label="Comfort ${f} of 5">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span>`}
 function grade(s){if(!s||!s.last)return 'B';const op=OPS[s.op];const P=s.period;const ppm=P.n?P.ppm/P.n:s.last.ppm,sat=P.n?P.sat/P.n:s.last.sat;const sc=50+(ppm-op.target)*4+(sat-65);return sc>=78?'A':sc>=60?'B':sc>=42?'C':sc>=25?'D':'E'}
 function tone(v,good,ok){return v>=good?'good':v>=ok?'warn':'bad'}
@@ -690,7 +674,7 @@ function tone(v,good,ok){return v>=good?'good':v>=ok?'warn':'bad'}
 /* ===================== UI ===================== */
 const SAVE_KEY='right-time-railway-v1';
 let S=null;
-const ui={tab:'hq',sheet:null,confirm:null,fleetF:'all',shopF:'fits',pickOp:'swr',modalQ:[],modal:null,acc:0,last:0,ptr:false,dirty:true,boardT:0,toastT:0,lastCall:''};
+const ui={tab:'hq',sheet:null,confirm:null,fleetF:'all',shopF:'all',pickOp:'swr',modalQ:[],modal:null,acc:0,last:0,ptr:false,dirty:true,boardT:0,toastT:0,lastCall:''};
 const $=s=>document.querySelector(s);
 const main=$('#main');
 
@@ -785,7 +769,7 @@ function updateHQ(){
     const us=routeUnits(S,r,true);
     const act=us.filter(u=>u.st==='active'),down=us.filter(u=>u.st!=='active');
     const tt=act.length?tripH(C[act[0].cls],r):1;
-    return `<button class="strip ${act.length?'':'idle'}" data-a="route" data-v="${r.id}" aria-label="${r.from} to ${r.to}, ${act.length} units"><span class="code">${r.fc}</span><span class="track ${r.elec}">${act.map((u,i)=>`<i class="pip" data-tt="${tripH(C[u.cls],r)}" data-o="${i/act.length*2}"></i>`).join('')}${down.map(u=>`<i class="pip down" style="left:${15+hash(u.id)%70}%"></i>`).join('')}</span><span class="code">${r.tc}</span></button>`}).join('');
+    return `<button class="strip ${act.length?'':'idle'}" data-a="route" data-v="${r.id}" aria-label="${r.from} to ${r.to}, ${act.length} units"><span class="code">${r.fc}</span><span class="track">${act.map((u,i)=>`<i class="pip" data-tt="${tripH(C[u.cls],r)}" data-o="${i/act.length*2}"></i>`).join('')}${down.map(u=>`<i class="pip down" style="left:${15+hash(u.id)%70}%"></i>`).join('')}</span><span class="code">${r.tc}</span></button>`}).join('');
   ui.pips=[...document.querySelectorAll('#strips .pip:not(.down)')];
   $('#log').innerHTML=S.news.slice(0,10).map(n=>{const d=dateOf(n.day);return `<div><time>${d.getUTCDate()} ${MON[d.getUTCMonth()]}</time><span class="${n.tone}">${n.text}</span></div>`}).join('');
   ui.boardT=0; updateBoard();
@@ -819,13 +803,11 @@ function updateBoard(){
 /* ---------- Routes ---------- */
 function routeCard(r){
   const t=r.t,us=routeUnits(S,r,true),act=us.filter(u=>u.st==='active');
-  const proj=S.projects.find(p=>p.route===r.id);
   const load=t?t.load:0;
-  const tags=[`<span class="tag ${r.elec}">${ELEC[r.elec]}</span>`,`<span>${r.mi} mi · ${r.mph} mph line</span>`];
+  const tags=[`<span class="tag plain">${r.label||KIND[r.kind]}</span>`,`<span>${r.mi} mi · ${r.mph} mph line</span>`];
   if(!act.length)tags.push('<span class="tag bad">No service</span>');
   else if(load>1.15)tags.push('<span class="tag bad">Overcrowded</span>');
   else if(load>1)tags.push('<span class="tag warn">Standing room only</span>');
-  if(proj)tags.push(`<span class="tag good">Wiring · ${proj.days}d</span>`);
   if(r.fare!==1)tags.push(`<span class="tag plain">Fares ${r.fare>1?'+':''}${Math.round((r.fare-1)*100)}%</span>`);
   const prof=t?t.rev-t.cost:0;
   return `<button class="card" data-a="route" data-v="${r.id}">
@@ -846,19 +828,16 @@ function renderRoutes(){
   main.innerHTML=`<section class="sec"><div class="sec-head"><h2>Your routes</h2><span class="mute" style="font-size:13px">Tap to manage</span></div><div class="list">${open.map(routeCard).join('')}</div></section>
   ${locked.length?`<section class="sec"><h2>Bid for new services</h2><div class="list">${locked.map(r=>`
    <div class="card"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div>
-   <div class="meta"><span class="tag ${r.elec}">${ELEC[r.elec]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
+   <div class="meta"><span class="tag plain">${KIND[r.kind]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
    <p class="calls" style="margin:0">Via ${r.calls.join(', ')}</p>
    <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m · you'll need trains for it</small></button></div></div>`).join('')}</div></section>`:''}`;
 }
 function routeSheet(r){
   const t=r.t,us=routeUnits(S,r,true),op=OPS[S.op];
   const depot=S.units.filter(u=>u.st==='depot'||(u.st!=='order'&&!u.route));
-  const fits=depot.filter(u=>compat(C[u.cls].trac,r.elec)&&u.st==='depot');
-  const proj=S.projects.find(p=>p.route===r.id);
-  const ecost=Math.round(r.mi*.45*10)/10,edays=Math.round(60+r.mi*.8);
-  const conf=ui.confirm==='elec:'+r.id;
+  const fits=depot.filter(u=>u.st==='depot');
   return `
-  <div class="sheet-head"><div><div class="kicker">${r.label||ELEC[r.elec]}</div><h3 class="rt-title" style="font-size:22px"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></h3></div><button class="x" data-a="close" aria-label="Close">✕</button></div>
+  <div class="sheet-head"><div><div class="kicker">${r.label||KIND[r.kind]}</div><h3 class="rt-title" style="font-size:22px"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></h3></div><button class="x" data-a="close" aria-label="Close">✕</button></div>
   <p class="calls" style="margin:0">Calling at ${r.calls.join(', ')}. ${r.mi} miles, line speed ${r.mph} mph.</p>
   <div class="stats">
     <div class="stat"><span class="k">Demand</span><span class="v">${t?Math.round(t.dem).toLocaleString('en-GB'):'—'}</span></div>
@@ -875,11 +854,8 @@ function routeSheet(r){
   <div class="sec"><div class="row"><span class="subhead">Units on this route (${us.length})</span></div>
     <div>${us.length?us.map(u=>`<div class="mini"><span><span class="no">${unitName(u)}</span> <span class="mute">${C[u.cls].name}</span>${u.st!=='active'?` <span class="tag ${u.st==='repair'?'bad':'warn'}">${u.st==='repair'?'Repair':'Refurb'} ${u.days}d</span>`:''}</span><button class="btn ghost sm" data-a="unassign" data-v="${u.id}">To depot</button></div>`).join(''):'<p class="bad" style="margin:0">No trains. Every day without a service drags your PPM down.</p>'}</div></div>
   <div class="sec"><div class="row"><span class="subhead">Spare in the depot</span></div>
-    <div>${fits.length?fits.map(u=>`<div class="mini"><span><span class="no">${unitName(u)}</span> <span class="mute">${C[u.cls].name} · ${Math.round(u.rel*100)}% reliable</span></span><button class="btn sm" data-a="assign" data-v="${u.id}|${r.id}">Assign</button></div>`).join(''):`<p class="mute" style="margin:0">No spare units that can run here.${r.elec==='none'?' This line needs diesel or bi-mode trains.':r.elec==='dc'?' This line needs third-rail, dual-voltage, diesel or bi-mode trains.':' This line needs 25 kV, dual-voltage, diesel or bi-mode trains.'}</p>`}</div>
-    <div class="btns"><button class="btn ghost" data-a="shopfor" data-v="${r.id}">Buy trains for this route<small>Shows only trains that can run here</small></button></div></div>
-  ${r.elec==='none'?`<div class="sec panel" style="background:var(--panel-2)"><span class="subhead">Electrify with 25 kV overhead wires</span>
-    ${proj?`<p style="margin:0">Wiring in progress: ${proj.days} days left. Demand is down 10% during the works.</p>`:`<p class="mute" style="margin:0;font-size:14px">New third rail is effectively off the table on safety grounds, so it's overhead wires. Lets electric trains run here and cuts bi-mode running costs. £${ecost}m, ${edays} days.</p>
-    <div class="btns">${conf?`<button class="btn" data-a="electrify" data-v="${r.id}" ${S.cash<ecost*1e6?'disabled':''}>Confirm: spend £${ecost}m</button><button class="btn ghost" data-a="unconfirm">Cancel</button>`:`<button class="btn ghost" data-a="confirm" data-v="elec:${r.id}" ${S.cash<ecost*1e6?'disabled':''}>Fund electrification<small>£${ecost}m · ${edays} days</small></button>`}</div>`}</div>`:''}`;
+    <div>${fits.length?fits.map(u=>`<div class="mini"><span><span class="no">${unitName(u)}</span> <span class="mute">${C[u.cls].name} · ${Math.round(u.rel*100)}% reliable</span></span><button class="btn sm" data-a="assign" data-v="${u.id}|${r.id}">Assign</button></div>`).join(''):'<p class="mute" style="margin:0">No spare trains in the depot.</p>'}</div>
+    <div class="btns"><button class="btn ghost" data-a="shopfor" data-v="${r.id}">Buy trains for this route<small>They'll go straight onto this line</small></button></div></div>`;
 }
 function fareLabel(r){return `${r.fare===1?'Standard':(r.fare>1?'+':'')+Math.round((r.fare-1)*100)+'%'} · avg £${(baseFare(r)*r.fare).toFixed(2)}`}
 
@@ -897,18 +873,18 @@ function renderFleet(){
   main.innerHTML=`
   <section class="sec"><div class="sec-head"><h2>Fleet · ${S.units.filter(u=>u.st!=='order').length} units</h2><span class="mute" style="font-size:13px">Right column: reliability</span></div>
   <div class="filters">${[['all','All'],['depot','Spare ('+cnt('depot')+')'],['down','Out of service ('+cnt('down')+')'],['order','On order ('+cnt('order')+')']].map(([k,t])=>`<button data-a="fleetf" data-v="${k}" class="${f===k?'on':''}">${t}</button>`).join('')}</div></section>
-  ${Object.keys(byC).length?Object.keys(byC).sort((a,b)=>+a-+b).map(k=>`<section class="sec"><div class="group-head"><span>Class ${k} ${C[k].name}</span><span class="tag ${C[k].trac}">${TRAC[C[k].trac]}</span></div><div class="list">${byC[k].sort((a,b)=>a.n-b.n).map(unitRow).join('')}</div></section>`).join(''):`<p class="mute">Nothing here.</p>`}`;
+  ${Object.keys(byC).length?Object.keys(byC).sort((a,b)=>+a-+b).map(k=>`<section class="sec"><div class="group-head"><span>Class ${k} ${C[k].name}</span><span class="mute" style="font-size:13px;font-weight:500">${C[k].seats} seats · ${C[k].mph} mph</span></div><div class="list">${byC[k].sort((a,b)=>a.n-b.n).map(unitRow).join('')}</div></section>`).join(''):`<p class="mute">Nothing here.</p>`}`;
 }
 function sellValue(u){const c=C[u.cls];const base=(c.newPrice?c.newPrice*.55:c.usedPrice*.75)*1e6;return Math.round(base*clamp(1-ageOf(S,u)*.025,.15,1)*(.6+u.rel*.4)/1000)*1000}
 function refurbCost(u){const c=C[u.cls];return Math.round(((c.newPrice||c.usedPrice*3)*.12+.2)*1e6/1000)*1000}
 function unitSheet(u){
   const c=C[u.cls],r=u.route?routeOf(S,u.route):null;
-  const fits=openRoutes(S).filter(x=>compat(c.trac,x.elec));
+  const fits=openRoutes(S);
   const sv=sellValue(u),rc=refurbCost(u);
   const busy=u.st==='order'||u.st==='repair'||u.st==='refurb';
   return `
   <div class="sheet-head"><div><div class="kicker">Class ${c.id} ${c.name} · ${c.builder}</div><h3 class="cls-no" style="font-size:30px">${unitName(u)}</h3></div><button class="x" data-a="close" aria-label="Close">✕</button></div>
-  <div class="meta"><span class="tag ${c.trac}">${TRAC[c.trac]}</span><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph</span></div>
+  <div class="meta"><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph</span></div>
   <div class="stats">
     <div class="stat"><span class="k">Built</span><span class="v">${u.built}</span></div>
     <div class="stat"><span class="k">Reliability</span><span class="v ${tone(u.rel,.9,.82)}">${u.st==='order'?'—':Math.round(u.rel*100)+'%'}</span></div>
@@ -917,7 +893,7 @@ function unitSheet(u){
   </div>
   <p style="margin:0">${u.st==='order'?`Being built. Arrives in ${u.days} days${r?` and goes straight onto ${r.from} – ${r.to}`:''}.`:u.st==='repair'?`In the depot being fixed. Back in ${u.days} days.`:u.st==='refurb'?`Being refurbished. Back in ${u.days} days.`:r?`Running ${r.from} – ${r.to}, ${tripsPerDay(c,r)} trips a day.`:'Sitting in the depot costing money.'}</p>
   <div class="sec"><span class="subhead">${u.st==='order'?'Send it to':'Assign to'}</span>
-    <div>${fits.map(x=>`<div class="mini"><span>${x.fc} – ${x.tc} <span class="mute">${x.to} · ${tripsPerDay(c,x)} trips/day</span></span>${u.route===x.id?'<span class="tag good">Here</span>':`<button class="btn sm ${u.route?'ghost':''}" data-a="assign" data-v="${u.id}|${x.id}">Move here</button>`}</div>`).join('')||'<p class="mute" style="margin:0">None of your routes can take this train.</p>'}
+    <div>${fits.map(x=>`<div class="mini"><span>${x.fc} – ${x.tc} <span class="mute">${x.to} · ${tripsPerDay(c,x)} trips/day</span></span>${u.route===x.id?'<span class="tag good">Here</span>':`<button class="btn sm ${u.route?'ghost':''}" data-a="assign" data-v="${u.id}|${x.id}">Move here</button>`}</div>`).join('')}
     ${u.route&&u.st!=='order'?`<div class="mini"><span class="mute">Take out of service</span><button class="btn ghost sm" data-a="unassign" data-v="${u.id}">To depot</button></div>`:''}</div></div>
   ${u.st!=='order'?`<div class="btns">
     <button class="btn ghost" data-a="refurb" data-v="${u.id}" ${busy||S.cash<rc||u.cb>=1?'disabled':''}>Refurbish<small>${u.cb>=1?'Already done twice':`${money(rc)} · 14 days · better seats and reliability`}</small></button>
@@ -930,23 +906,20 @@ function renderShop(){
   const f=ui.shopF, open=openRoutes(S);
   const fr=f.startsWith('route:')?routeOf(S,f.slice(6)):null;
   let list=Object.values(C);
-  if(fr)list=list.filter(c=>compat(c.trac,fr.elec));
-  else if(f==='fits')list=list.filter(c=>open.some(r=>compat(c.trac,r.elec)));
-  else if(f==='new')list=list.filter(c=>c.newPrice);
+  if(f==='new')list=list.filter(c=>c.newPrice);
   else if(f==='used')list=list.filter(c=>c.usedPrice);
   list.sort((a,b)=>(a.newPrice?0:1)-(b.newPrice?0:1)||+a.id-+b.id);
   main.innerHTML=`
   <section class="sec"><div class="sec-head"><h2>Rolling stock</h2><span class="mute num" style="font-size:13px">Cash ${money(S.cash)}</span></div>
-   <div class="filters">${fr?`<button class="on" data-a="shopf" data-v="fits">For ${fr.fc} – ${fr.tc} ✕</button>`:''}${[['fits','Fits my network'],['new','New build'],['used','Second-hand'],['all','Everything']].map(([k,t])=>`<button data-a="shopf" data-v="${k}" class="${f===k?'on':''}">${t}</button>`).join('')}</div>
+   <div class="filters">${fr?`<button class="on" data-a="shopf" data-v="all">For ${fr.fc} – ${fr.tc} ✕</button>`:''}${[['all','All trains'],['new','New build'],['used','Second-hand']].map(([k,t])=>`<button data-a="shopf" data-v="${k}" class="${f===k?'on':''}">${t}</button>`).join('')}</div>
    <p class="mute" style="margin:0;font-size:13.5px">New trains take months to build. Second-hand units arrive tomorrow, but they're older and fail more often.</p></section>
   <div class="list">${list.map(c=>{
-    const runs=open.filter(r=>compat(c.trac,r.elec));
     const np=c.newPrice*1e6,up=c.usedPrice*1e6;
     return `<div class="card">
       <div class="cls-head"><div class="cls-name">${c.name}<small>${c.builder} · from ${c.year}</small></div><span class="cls-no">${c.id}</span></div>
-      <div class="meta"><span class="tag ${c.trac}">${TRAC[c.trac]}</span><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph</span>${stars(c.comfort)}</div>
+      <div class="meta"><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph</span>${stars(c.comfort)}</div>
       <p class="blurb">${c.blurb}</p>
-      <p class="calls" style="margin:0">${runs.length?`Can run ${runs.length} of your ${open.length} routes: ${runs.map(r=>r.tc).join(', ')}`:'<span class="bad">Cannot run on any of your routes.</span>'}</p>
+      <p class="calls" style="margin:0">Reliability ${Math.round(c.rel*100)}% when new${c.stand>=1.6?' · built for crowds':''}${c.mph>=125?' · fast':''}</p>
       <div class="btns">
        ${c.newPrice?`<button class="btn" data-a="buynew" data-v="${c.id}" ${S.cash<np?'disabled':''}>Order new · ${money(np)}<small>Arrives in about ${c.deliv} days</small></button>`:''}
        ${c.usedPrice?`<button class="btn ${c.newPrice?'ghost':''}" data-a="buyused" data-v="${c.id}" ${S.cash<up?'disabled':''}>Second-hand · ${money(up)}<small>Ready tomorrow</small></button>`:''}
@@ -1026,7 +999,7 @@ function renderMap(){
       <g id="m-routes"></g><g id="m-stations"></g><g id="m-trains"></g><g id="m-labels"></g>
     </svg>
     <div class="mapctl"><button data-a="mz" data-v="1.6" aria-label="Zoom in">+</button><button data-a="mz" data-v="0.625" aria-label="Zoom out">−</button><button data-a="mfit" data-v="net" aria-label="Fit my network">Fit</button><button data-a="mfit" data-v="gb" aria-label="Show all of Britain">GB</button></div>
-    <div class="maplegend" aria-hidden="true"><span><i style="background:var(--dc)"></i>Third rail</span><span><i style="background:var(--ac)"></i>25 kV</span><span><i style="background:var(--diesel)"></i>Diesel</span><span><i class="dot"></i>Train</span></div>
+    <div class="maplegend" aria-hidden="true"><span><i style="background:var(--route)"></i>Your line</span><span><i style="background:var(--bad);opacity:.6;height:6px"></i>Overcrowded</span><span><i class="dot"></i>Train</span></div>
   </section>
   <section id="mapinfo"></section>`;
   ui.mapS=0;
@@ -1040,13 +1013,11 @@ function updateMap(){
   for(const r of rs){
     const P=routePoly(S.op,r.id);if(!P.d)continue;
     const act=r.open?routeUnits(S,r).length:0,load=r.t&&r.open?r.t.load:0;
-    const proj=S.projects.some(p=>p.route===r.id);
     const w=r.locked&&!r.open?2:clamp(2.5+r.demand/5000,2.5,7);
     if(r.id===sel)rh+=`<path class="rl sel" d="${P.d}" style="stroke-width:${w+5}px"/>`;
     if(r.open&&act&&load>1.05)rh+=`<path class="rl halo" d="${P.d}" style="stroke-width:${w+(load>1.2?9:6)}px"/>`;
-    const cls=!r.open?'locked':!act?'idle':r.elec;
+    const cls=!r.open?'locked':!act?'idle':'live';
     rh+=`<path class="rl ${cls}" d="${P.d}" style="stroke-width:${w}px"/>`;
-    if(proj)rh+=`<path class="rl wiring" d="${P.d}" style="stroke-width:${w}px"/>`;
     rh+=`<path class="hit" d="${P.d}" data-mr="${r.id}"/>`;
     [r.from,r.to].forEach(n=>{if(GEO.st[n])stn.set(n,{t:1,open:r.open||(stn.get(n)||{}).open})});
     r.calls.forEach(n=>{if(GEO.st[n]&&!stn.has(n))stn.set(n,{t:0,open:r.open})});
@@ -1081,10 +1052,10 @@ function renderMapInfo(){
   const r=ui.mapSel?routeOf(S,ui.mapSel):null;
   if(!r){el.innerHTML=`<p class="mute" style="margin:0;font-size:14px">Tap a line to inspect it. A red glow means overcrowded, a red dashed line has no trains, grey dashes are routes you could bid for.</p>`;return}
   if(!r.open){el.innerHTML=`<div class="card"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div>
-    <div class="meta"><span class="tag ${r.elec}">${ELEC[r.elec]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
+    <div class="meta"><span class="tag plain">${KIND[r.kind]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
     <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m</small></button><button class="btn ghost" data-a="msel" data-v="">Close</button></div></div>`;return}
   el.innerHTML=routeCard(r).replace('<button class="card"','<div class="card"').replace(/<\/button>\s*$/,'</div>').replace('data-a="route"','data-x="1"')
-    +`<div class="btns" style="margin-top:8px"><button class="btn" data-a="route" data-v="${r.id}">Manage this route<small>Trains, fares, electrification</small></button><button class="btn ghost" data-a="msel" data-v="">Deselect</button></div>`;
+    +`<div class="btns" style="margin-top:8px"><button class="btn" data-a="route" data-v="${r.id}">Manage this route<small>Trains and fares</small></button><button class="btn ghost" data-a="msel" data-v="">Deselect</button></div>`;
 }
 function bindMap(){
   const svg=$('#map');if(!svg)return;
@@ -1117,10 +1088,10 @@ function renderMore(){
    <p>Every 28 days the DfT reviews your <b>PPM</b> (the share of trains arriving on time) and passenger satisfaction. Fall more than 6 points under the ${op.target}% target, drop below 50% satisfaction, or end a period overdrawn, and you get a warning. Three warnings and your services are handed to Great British Railways. Good periods clear a warning.</p>
    <ul>
     <li>Crowded trains make people late and cross. Add units where seats-filled goes red.</li>
-    <li>Trains need the right power: third rail (DC), 25 kV overhead (AC), or diesel and bi-mode anywhere.</li>
+    <li>Any train can run anywhere. Big trains carry more people; fast trains do more trips on long routes.</li>
     <li>Old units break down more. Refurbish them or replace them.</li>
     <li>Spare units in the depot still cost money every day.</li>
-    <li>Leaves fall in October. Snow ices the third rail in winter. Nothing runs on Christmas Day.</li>
+    <li>Leaves fall in October. Snow freezes the points in winter. Nothing runs on Christmas Day.</li>
    </ul></div></section>
   <section class="sec"><h2>Game</h2><div class="panel sec">
    <div class="row"><span>Best cash balance</span><b class="num">${money(S.best.cash)}</b></div>
@@ -1198,7 +1169,6 @@ function tickRender(){
 /* ---------- actions ---------- */
 function assign(uid,rid){
   const u=S.units.find(x=>x.id===uid),r=routeOf(S,rid);if(!u||!r)return;
-  if(!compat(C[u.cls].trac,r.elec)){toast(`Class ${u.cls} can't run on ${ELEC[r.elec].toLowerCase()} track.`);return}
   u.route=rid;if(u.st==='depot')u.st='active';
   toast(`${unitName(u)} now runs ${r.fc} – ${r.tc}.`);
 }
@@ -1206,8 +1176,8 @@ const A={
  pickop:v=>{ui.pickOp=v;renderChooser();const p=document.querySelector('.panel.sec');if(p)p.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},
  start:()=>{S=newGame(ui.pickOp);ui.vb=null;ui.mapSel=null;S.speed=1;ui.tab='hq';ui.sheet=null;save();renderAll();window.scrollTo(0,0);
    const op=OPS[S.op];
-   EMIT.modal({kicker:'Day one',title:`You run ${op.name} now`,body:`<p>The DfT wants ${op.target}% of trains on time and passengers who don't hate you. They check every 28 days. Three bad reviews and Great British Railways takes over.</p><p><b>First job:</b> open <b>Routes</b> and look for red "Overcrowded" tags. Those lines need more trains.</p><p class="mute">Trains must match the power supply. Third-rail units can't run under overhead wires, and electric trains can't run on diesel-only lines.</p>`,choices:[{label:'Get the trains moving',fn:()=>{}}]});},
- tab:v=>{ui.tab=v;ui.confirm=null;if(v!=='shop'&&ui.shopF.startsWith('route:'))ui.shopF='fits';renderAll();window.scrollTo(0,0)},
+   EMIT.modal({kicker:'Day one',title:`You run ${op.name} now`,body:`<p>The DfT wants ${op.target}% of trains on time and passengers who don't hate you. They check every 28 days. Three bad reviews and Great British Railways takes over.</p><p><b>First job:</b> open <b>Routes</b> and look for red "Overcrowded" tags. Those lines need more trains.</p><p class="mute">Any train can run on any of your lines. Fast trains suit long routes; big trains suit crowded commuter lines.</p>`,choices:[{label:'Get the trains moving',fn:()=>{}}]});},
+ tab:v=>{ui.tab=v;ui.confirm=null;if(v!=='shop'&&ui.shopF.startsWith('route:'))ui.shopF='all';renderAll();window.scrollTo(0,0)},
  speed:v=>{S.speed=+v;renderTop()},
  route:v=>{ui.sheet={t:'route',id:v};ui.confirm=null;renderSheet()},
  unit:v=>{ui.sheet={t:'unit',id:v};ui.confirm=null;renderSheet()},
@@ -1233,7 +1203,6 @@ const A={
  shopf:v=>{ui.shopF=v;renderMain()},
  fleetf:v=>{ui.fleetF=v;renderMain()},
  openroute:v=>{const r=routeOf(S,v);if(!r||S.cash<r.cost*1e6)return;S.cash-=r.cost*1e6;r.open=true;r.sat=72;news(S,`Bid won: ${r.from} – ${r.to} is yours. Get some trains on it.`,'good');unlock(S,'expand');save();ui.sheet={t:'route',id:r.id};renderAll()},
- electrify:v=>{const r=routeOf(S,v);const c=Math.round(r.mi*.45*10)/10*1e6;if(S.cash<c)return;S.cash-=c;S.projects.push({route:v,days:Math.round(60+r.mi*.8)});ui.confirm=null;news(S,`Electrification of ${r.from} – ${r.to} begins. Masts going up.`,'');save();renderAll()},
  choice:v=>{const m=ui.modal;if(!m)return;const c=m.choices[+v];ui.modal=null;$('#modal').innerHTML='';try{c.fn&&c.fn()}catch(e){console.error(e)}if(S)checkAch(S);save();showModal();if(S)tickRender();},
  reset:()=>{S=null;ui.confirm=null;ui.sheet=null;ui.modal=null;ui.modalQ=[];$('#modal').innerHTML='';save();renderAll();window.scrollTo(0,0)},
 };
