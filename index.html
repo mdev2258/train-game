@@ -37,6 +37,7 @@ body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.4;-
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
   padding-block:0 calc(84px + env(safe-area-inset-bottom, 0px));overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:30;background:var(--bg)}
+[hidden]{display:none!important}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
 button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 h1,h2,h3{text-wrap:balance;margin:0}
@@ -175,41 +176,63 @@ input[type=range]{width:100%;accent-color:var(--amber);height:28px}
 .mini .no{font-family:var(--f-board);font-weight:900;color:var(--amber)}
 
 /* map */
-.mapwrap{position:relative;height:calc(100vh - 290px);height:calc(100dvh - 290px);min-height:360px;max-height:760px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--sea)}
+.mapwrap{position:relative;height:calc(100vh - 220px);min-height:320px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--sea)}
 #map{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 #map:active{cursor:grabbing}
 .sea{fill:var(--sea)}
 .land{fill:var(--land);stroke:var(--coast);stroke-width:.8px;vector-effect:non-scaling-stroke}
 .land.far{fill:var(--land-far)}
-.other{fill:none;stroke:#334050;stroke-width:1.3px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.other{fill:none;stroke:#2f3a48;stroke-width:1.2px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .rl{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.rl.live{stroke:var(--route)}
+.rl.bed{stroke:#0b1016}
+.rl.live{stroke:var(--route);stroke-dasharray:none}
 .rl.locked{stroke:var(--mute);stroke-dasharray:3 6;opacity:.7}
-.rl.idle{stroke:var(--bad);stroke-dasharray:7 6}
-.rl.halo{stroke:var(--bad);opacity:.32}
-.rl.sel{stroke:var(--ink);opacity:.9}
-.hit{fill:none;stroke:transparent;stroke-width:24px;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
-.st{fill:var(--ink);opacity:.7;pointer-events:none}
+.rl.idle{stroke:var(--warn);stroke-dasharray:7 6}
+.rl.halo{stroke:var(--bad);opacity:.3}
+.rl.sel{stroke:var(--ink);opacity:.85}
+.hit{fill:none;stroke:transparent;stroke-width:22px;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
+.st{fill:var(--ink);opacity:.75;pointer-events:none}
 .term{fill:var(--bg);stroke:var(--ink);stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}
 .st.off,.term.off{opacity:.35}
 .lbl{fill:var(--ink);font-family:var(--f-label);font-weight:700;paint-order:stroke;stroke:var(--sea);stroke-linejoin:round;pointer-events:none}
-.lbl-call{fill:var(--mute);font-weight:500;display:none}
-#map.zoomed .lbl-call{display:inline}
+.lbl-call{fill:var(--mute);font-weight:500}
 .lbl.off{opacity:.55}
-.tr{fill:var(--amber);stroke:#1b1305;stroke-width:1.4px;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 3px rgba(255,178,46,.7))}
-.tr.down{fill:var(--bad);filter:none}
+.train{pointer-events:none}
+.train.sel use{filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 3px var(--amber))}
+.train.down use{filter:saturate(.35) brightness(.8)}
+.train.parked use{opacity:.55}
+.alert circle{fill:var(--bad)}
+.alert text{fill:#fff;font-family:var(--f-label);font-weight:800;font-size:12px}
+.alert{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.25}}
+.bub{cursor:pointer}
+.bub rect,.bub path,.bub circle{fill:var(--bad)}
+.bub circle,.bub path:last-of-type{fill:#fff}
+.bub path:first-of-type{fill:var(--bad)}
+.bub text{fill:#fff;font-family:var(--f-label);font-weight:700;font-size:11.5px}
+.bub.idle rect,.bub.idle path:first-of-type{fill:var(--warn)}
+.bub.idle text,.bub.idle circle,.bub.idle path:last-of-type{fill:#1b1305}
+.fxcash{fill:var(--good);font-family:var(--f-label);font-weight:800;paint-order:stroke;stroke:#06140c;stroke-linejoin:round;pointer-events:none}
+.hud{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 76px);pointer-events:none}
+.chip{display:flex;flex-direction:column;line-height:1.05;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 9px;opacity:.95}
+.chip small{font-family:var(--f-label);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.chip b{font-family:var(--f-label);font-size:18px;font-variant-numeric:tabular-nums}
 .mapctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
-.mapctl button{width:42px;height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-family:var(--f-label);font-weight:700;font-size:15px;opacity:.94}
-.maplegend{position:absolute;left:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:5px 10px;max-width:calc(100% - 20px);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-family:var(--f-label);font-size:12px;font-weight:600;color:var(--mute);opacity:.94;pointer-events:none}
-.maplegend span{display:flex;align-items:center;gap:5px}
-.maplegend i{width:14px;height:3px;border-radius:2px;display:inline-block}
-.maplegend i.dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
+.mapctl button{width:42px;height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-family:var(--f-label);font-weight:700;font-size:15px;opacity:.95}
+.ticker{position:absolute;left:0;right:0;bottom:0;height:32px;background:var(--board);border-top:1px solid #222;overflow:hidden;white-space:nowrap;text-align:left;display:flex;align-items:center;
+  background-image:radial-gradient(rgba(255,178,46,.06) 1px, transparent 1.2px);background-size:4px 4px}
+.ticker .marquee{font-family:var(--f-board);font-weight:700;font-size:13.5px;color:var(--amber);text-shadow:0 0 6px rgba(255,178,46,.35);animation-duration:16s}
+.ticker .marquee.bad{color:#ff8a7a} .ticker .marquee.good{color:#7fe0a8}
+.mapcard{position:absolute;left:8px;right:8px;bottom:40px;max-height:calc(100% - 100px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.mc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.mc-line{margin:0;font-size:14px}
+.side{width:100%;height:auto;display:block}
 .linkbtn{font-family:var(--f-label);font-weight:600;font-size:13.5px;color:var(--amber)}
 
 /* tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--panel);border-top:1px solid var(--line);
   display:flex;justify-content:center;padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))}
-.tabs-in{display:grid;grid-template-columns:repeat(6,1fr);width:100%;max-width:640px}
+.tabs-in{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:640px}
 .tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--mute);border-radius:8px}
 .tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button.on{color:var(--amber)}
@@ -674,7 +697,7 @@ function tone(v,good,ok){return v>=good?'good':v>=ok?'warn':'bad'}
 /* ===================== UI ===================== */
 const SAVE_KEY='right-time-railway-v1';
 let S=null;
-const ui={tab:'hq',sheet:null,confirm:null,fleetF:'all',shopF:'all',pickOp:'swr',modalQ:[],modal:null,acc:0,last:0,ptr:false,dirty:true,boardT:0,toastT:0,lastCall:''};
+const ui={tab:'map',sheet:null,confirm:null,fleetF:'all',shopF:'all',pickOp:'swr',modalQ:[],modal:null,acc:0,last:0,ptr:false,dirty:true,boardT:0,toastT:0,lastCall:''};
 const $=s=>document.querySelector(s);
 const main=$('#main');
 
@@ -694,9 +717,10 @@ const ICONS={
  fleet:'<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9.5" cy="14" r=".6"/><circle cx="14.5" cy="14" r=".6"/></svg>',
  shop:'<svg viewBox="0 0 24 24"><path d="M3 7h18l-1.5 11a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7z"/><path d="M8 7a4 4 0 0 1 8 0M12 11v5M9.5 13.5h5"/></svg>',
  map:'<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>',
+ office:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4M7 8h3M7 12h6M14 8h3"/></svg>',
  more:'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>',
 };
-const TABN={hq:'Control',map:'Map',routes:'Routes',fleet:'Fleet',shop:'Buy',more:'Goals'};
+const TABN={map:'Map',routes:'Routes',fleet:'Fleet',shop:'Buy',office:'Office'};
 function renderTabs(){
   const down=S.units.filter(u=>u.st==='depot').length;
   $('#tabs-in').innerHTML=Object.keys(TABN).map(k=>`<button data-a="tab" data-v="${k}" class="${ui.tab===k?'on':''}" aria-label="${TABN[k]}">${ICONS[k]}<span>${TABN[k]}${k==='fleet'&&down?`<span class="badge">${down}</span>`:''}</span></button>`).join('');
@@ -742,7 +766,7 @@ function renderChooser(){
 }
 
 /* ---------- HQ ---------- */
-function renderHQ(){
+function renderOffice(){
   const op=OPS[S.op];
   main.innerHTML=`
   <section class="board" aria-label="Departure board">
@@ -751,8 +775,7 @@ function renderHQ(){
     <div class="calling"><span class="marquee" id="bcall"></span></div>
   </section>
   <section class="kpis" id="kpis"></section>
-  <section class="sec"><div class="sec-head"><h2>Network</h2><button class="linkbtn" data-a="tab" data-v="map">Open map →</button></div><div class="strips" id="strips"></div></section>
-  <section class="sec"><h2>Control log</h2><div class="panel log" id="log"></div></section>`;
+  <section class="sec"><h2>Control log</h2><div class="panel log" id="log"></div></section>`+moreHTML();
   ui.lastCall='';
   updateHQ();
 }
@@ -765,7 +788,7 @@ function updateHQ(){
    <div class="kpi"><span class="k">Satisfaction</span><span class="v ${sat==null?'':tone(sat,70,50)}">${sat==null?'—':Math.round(sat)+'%'}</span><span class="s">Below 50% earns a warning</span></div>
    <div class="kpi"><span class="k">Yesterday</span><span class="v ${l&&l.profit<0?'bad':''}">${l?money(l.profit):'—'}</span><span class="s">${l?Math.round(l.pax).toLocaleString('en-GB')+' passengers':'Day one'}</span></div>
    <div class="kpi"><span class="k">Period profit</span><span class="v ${pprof<0?'bad':''}">${P.n?money(pprof):'—'}</span><span class="s">${28-(S.day%28)} days to DfT review</span></div>`;
-  $('#strips').innerHTML=openRoutes(S).map(r=>{
+  if($('#strips'))$('#strips').innerHTML=openRoutes(S).map(r=>{
     const us=routeUnits(S,r,true);
     const act=us.filter(u=>u.st==='active'),down=us.filter(u=>u.st!=='active');
     const tt=act.length?tripH(C[act[0].cls],r):1;
@@ -927,6 +950,107 @@ function renderShop(){
 }
 
 /* ---------- Map ---------- */
+const LIV={
+ swr:{body:'#1d3f7a',stripe:'#9fc0e3',skirt:'#0f2347'},
+ southern:{body:'#eeeeea',stripe:'#1f6e3a',skirt:'#86c440'},
+ gwr:{body:'#0e4733',stripe:'#d4b24c',skirt:'#082a1f'},
+ lner:{body:'#e6e7ea',stripe:'#cf1f3f',skirt:'#555a62'},
+ avanti:{body:'#2b3b42',stripe:'#25b5a5',skirt:'#182328'},
+ northern:{body:'#2b2f6e',stripe:'#e8e8f2',skirt:'#6d3b98'},
+ scotrail:{body:'#22408f',stripe:'#ffffff',skirt:'#142a63'},
+ merseyrail:{body:'#f2c500',stripe:'#3c3c3c',skirt:'#3c3c3c'},
+};
+// class -> nose at front, nose at rear, car length (px at 1x), doors per car side, window style, pantograph, power-pack car
+const MODEL={};
+[
+ ['142','flat','flat',6.5,2,'big',0],['150','flat','flat',8,2,'big',0],['156','flat','flat',8.5,2,'big',0],
+ ['158','round','round',8.5,2,'small',0],['159','round','round',8.5,2,'small',0],['165','flat','flat',8.5,2,'big',0],
+ ['170','slope','slope',8.5,2,'small',0],['195','slope','slope',9,2,'big',0],['220','pointy','pointy',9,1,'small',0],
+ ['43','hst','hst',9.5,2,'small',0],['91','wedge','flat',9.5,2,'small',1],['331','slope','slope',9,2,'big',1],
+ ['345','slope','slope',9,3,'big',1],['357','round','round',8.5,2,'big',1],['377','round','round',8.5,2,'big',0],
+ ['380','slope','slope',9,2,'big',1],['385','slope','slope',9,2,'big',1],['387','round','round',8.5,2,'big',1],
+ ['390','bullet','bullet',9.5,1,'small',1],['397','pointy','pointy',9.5,1,'small',1],['444','round','round',9.5,2,'small',0],
+ ['450','round','round',8.5,2,'big',0],['455','flat','flat',8.5,2,'big',0],['484','tube','tube',7.5,3,'big',0],
+ ['700','slope','slope',8.5,2,'big',1],['701','slope','slope',8.5,2,'big',0],['720','slope','slope',9,2,'big',1],
+ ['745','pointy','pointy',8.5,1,'small',1],['755','slope','slope',8.5,2,'big',1,1],['777','slope','slope',8,2,'big',0],
+ ['800','long','long',10,1,'small',1],['805','long','long',10,1,'small',1],['807','long','long',10,1,'small',1],['810','long','long',10,1,'small',1],
+].forEach(a=>MODEL[a[0]]={nose:a[1],rear:a[2],len:a[3],doors:a[4],win:a[5],pan:!!a[6],pp:!!a[7]});
+function carsOf(cls){const n=C[cls].cars,a=[];for(let i=0;i<n;i++)a.push(i===0?'F':i===n-1?'R':'M');if(MODEL[cls].pp)a.splice(Math.floor(n/2),0,'P');return a}
+
+/* top-down car sprites: local length 10 (x -5..5), width 4.4, nose pointing +x */
+const NOSE_TOP={
+ flat:['M-4.85-2.2H4.5Q5-2.2 5-1.7V1.7Q5 2.2 4.5 2.2H-4.85Z','M4-2.2H4.5Q5-2.2 5-1.7V1.7Q5 2.2 4.5 2.2H4Z',3.6],
+ tube:['M-4.85-2.2H3.9Q5-2.2 5-1.1V1.1Q5 2.2 3.9 2.2H-4.85Z','M3.9-2.2Q5-2.2 5-1.1V1.1Q5 2.2 3.9 2.2Z',3.4],
+ round:['M-4.85-2.2H3.2Q5-2.2 5 0Q5 2.2 3.2 2.2H-4.85Z','M3.5-2.15Q5-2 5 0Q5 2 3.5 2.15Z',3],
+ slope:['M-4.85-2.2H3Q5.1-1.6 5.1 0Q5.1 1.6 3 2.2H-4.85Z','M3.6-2Q5.1-1.4 5.1 0Q5.1 1.4 3.6 2Z',3],
+ pointy:['M-4.85-2.2H1.8Q4.4-1.6 5.3 0Q4.4 1.6 1.8 2.2H-4.85Z','M3-1.75Q4.4-1.2 5.3 0Q4.4 1.2 3 1.75Z',2],
+ bullet:['M-4.85-2.2H1.2Q4.2-1.9 5.4 0Q4.2 1.9 1.2 2.2H-4.85Z','M3.4-1.3Q4.6-.8 5.4 0Q4.6.8 3.4 1.3Z',1.5],
+ long:['M-4.85-2.2H.5Q4-2 5.6 0Q4 2 .5 2.2H-4.85Z','M3.6-1.2Q4.9-.6 5.6 0Q4.9.6 3.6 1.2Z',.8],
+ hst:['M-4.85-2.2H2.4L5.3-.7V.7L2.4 2.2H-4.85Z','M3.6-1.5L5.3-.7V.7L3.6 1.5Z',2],
+ wedge:['M-4.85-2.2H3L5.2-1V1L3 2.2H-4.85Z','M4-1.6L5.2-1V1L4 1.6Z',2.6],
+};
+function topDefs(L){
+  const edge='#06090d';
+  let h=`<g id="car-M"><rect x="-4.85" y="-2.2" width="9.7" height="4.4" rx=".8" fill="${L.body}" stroke="${edge}" stroke-width=".4"/><rect x="-4.2" y="-.45" width="8.4" height=".9" fill="${L.stripe}"/></g>`;
+  h+=`<g id="car-P"><rect x="-4.85" y="-1.9" width="9.7" height="3.8" rx=".6" fill="#5b6169" stroke="${edge}" stroke-width=".4"/><path d="M-3-1.1V1.1M-1-1.1V1.1M1-1.1V1.1M3-1.1V1.1" stroke="#2c3138" stroke-width=".7"/></g>`;
+  for(const [k,[b,y,e]] of Object.entries(NOSE_TOP))h+=`<g id="car-${k}"><path d="${b}" fill="${L.body}" stroke="${edge}" stroke-width=".4"/><rect x="-4.2" y="-.45" width="${e+4.2}" height=".9" fill="${L.stripe}"/><path d="${y}" fill="#ffd200"/></g>`;
+  return `<defs>${h}</defs>`;
+}
+
+/* side-view drawing for the train card */
+const NOSE_SIDE={
+ flat:w=>[`M0 12H${w-2}Q${w} 12 ${w} 14V50H0Z`,6],
+ tube:w=>[`M0 12H${w-5}Q${w} 12 ${w} 17V50H0Z`,6],
+ round:w=>[`M0 12H${w-10}Q${w} 12 ${w} 24V50H0Z`,10],
+ slope:w=>[`M0 12H${w-13}L${w} 27V50H0Z`,12],
+ pointy:w=>[`M0 12H${w-22}Q${w-4} 15 ${w} 36V50H0Z`,16],
+ bullet:w=>[`M0 12H${w-24}Q${w-2} 13 ${w} 37Q${w} 50 ${w-5} 50H0Z`,15],
+ long:w=>[`M0 12H${w-32}Q${w-4} 15 ${w} 40V50H0Z`,20],
+ hst:w=>[`M0 12H${w-17}L${w-3} 30L${w} 42V50H0Z`,13],
+ wedge:w=>[`M0 12H${w-15}L${w} 33V50H0Z`,12],
+};
+let sideId=0;
+function sideCar(type,cls,L,w,x,pan){
+  const m=MODEL[cls],id='sc'+(sideId++);
+  const nose=type==='F'?m.nose:type==='R'?m.rear:null;
+  const [d,yw]=nose?NOSE_SIDE[nose](w):[`M1 12H${w-1}Q${w} 12 ${w} 13V50H0V13Q0 12 1 12Z`,0];
+  const loco=(cls==='43'&&nose)||(cls==='91'&&type==='F');
+  let g=`<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">`;
+  if(type==='P'){
+    g+=`<rect width="${w}" height="60" fill="#5b6169"/>`;
+    for(let i=0;i<4;i++)g+=`<rect x="${4+i*(w-8)/4}" y="18" width="${(w-8)/4-3}" height="20" fill="#3a3f46"/>`;
+  } else {
+    g+=`<rect width="${w}" height="60" fill="${L.body}"/><rect y="34" width="${w}" height="4" fill="${L.stripe}"/><rect y="44" width="${w}" height="6" fill="${L.skirt}"/>`;
+    const x0=4,x1=w-(nose?yw+5:4);
+    if(loco){for(let i=0;i<5;i++)g+=`<rect x="${x0+6+i*5}" y="18" width="2.5" height="14" fill="rgba(0,0,0,.35)"/>`}
+    else{
+      const big=m.win==='big',k=Math.max(big?2:3,Math.round((x1-x0)/(big?15:8)));
+      for(let i=0;i<k;i++){const ww=(x1-x0)/k;g+=`<rect x="${x0+i*ww+1}" y="19" width="${ww-2.4}" height="${big?11:8}" rx="1.5" fill="#18212b"/>`}
+      const n=m.doors;for(let j=0;j<n;j++){const dx=n===1?(j?x1-9:x0+2):x0+4+j*((x1-x0-14)/(n-1));
+        g+=`<rect x="${dx}" y="16" width="8" height="33" rx="1" fill="rgba(0,0,0,.16)" stroke="rgba(0,0,0,.4)" stroke-width=".8"/><rect x="${dx+2}" y="19" width="4" height="9" rx="1" fill="#18212b"/>`}
+    }
+    if(nose)g+=`<rect x="${w-yw-3}" y="15" width="${yw+6}" height="11" fill="#18212b"/><rect x="${w-yw+1}" y="26" width="${yw+2}" height="24" fill="#ffd200"/>`;
+  }
+  g+='</g>';
+  g+=`<rect x="2" y="10.5" width="${w-(nose?yw+8:4)}" height="2.2" rx="1" fill="#8d96a0"/>`;
+  g+=`<rect x="${w*.06}" y="50" width="${w*.22}" height="4" fill="#20262d"/><rect x="${w*.72}" y="50" width="${w*.22}" height="4" fill="#20262d"/>`;
+  [.1,.24,.76,.9].forEach(p=>{g+=`<circle cx="${w*p}" cy="56.5" r="3.2" fill="#2b323a" stroke="#0d1013" stroke-width="1"/>`});
+  if(pan){const c=w/2;g+=`<path d="M${c-7} 10.5H${c+7}M${c-4} 10L${c+3} 4L${c-3} 1.5H${c+6}" fill="none" stroke="#c7ccd2" stroke-width="1.3" stroke-linejoin="round"/>`}
+  return `<g transform="translate(${type==='R'?x+w:x} 0)${type==='R'?' scale(-1 1)':''}">${g}</g>`;
+}
+function sideView(cls,opId){
+  const m=MODEL[cls],L=LIV[opId],all=carsOf(cls);
+  let show=all,gap=false;
+  if(all.length>4){show=m.pp?all:['F','M','M','R'];gap=!m.pp}
+  const ratio=t=>t==='P'?.5:1,G=3,E=gap?16:0;
+  const unit=(320-G*(show.length-1)-E)/show.reduce((a,t)=>a+ratio(t),0);
+  let x=0,h='';
+  const panAt=show.length>1?1:0;
+  show.forEach((t,i)=>{const w=unit*ratio(t);h+=sideCar(t,cls,L,w,x,m.pan&&i===panAt&&t!=='P');x+=w+G;if(gap&&i===1){h+=`<text x="${x+E/2-1.5}" y="36" text-anchor="middle" font-size="14" font-weight="700" fill="var(--mute)">…</text>`;x+=E}});
+  return `<svg class="side" viewBox="-2 0 324 62" role="img" aria-label="Class ${cls} ${C[cls].name} in ${OPS[opId].name} colours, ${all.length} vehicles"><path d="M0 60.5H320" stroke="var(--line)" stroke-width="1.5"/>${h}</svg>`;
+}
+
+/* geometry */
 const polyCache={};
 function defOf(opId,rid){const o=OPS[opId];return [...o.routes,...o.exp].find(r=>r.id===rid)}
 function routePoly(opId,rid){
@@ -935,16 +1059,17 @@ function routePoly(opId,rid){
   const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
   return polyCache[k]={pts,cum,len:cum[cum.length-1]||1,d:pts.length?'M'+pts.map(p=>p[0]+' '+p[1]).join('L'):''};
 }
-function pointAt(P,f){
-  const d=clamp(f,0,1)*P.len;let i=1;while(i<P.cum.length-1&&P.cum[i]<d)i++;
+function pointDir(P,d){
+  d=clamp(d,0,P.len);let i=1;while(i<P.cum.length-1&&P.cum[i]<d)i++;
   const a=P.pts[i-1],b=P.pts[i]||a,seg=(P.cum[i]-P.cum[i-1])||1,t=(d-P.cum[i-1])/seg;
-  return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+  return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,Math.atan2(b[1]-a[1],b[0]-a[0])*57.29578];
 }
+const pointAt=(P,f)=>pointDir(P,clamp(f,0,1)*P.len);
 function bounds(polys){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const P of polys)for(const [x,y] of P.pts){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}return [x0,y0,x1,y1]}
 function mapSize(){const el=$('#map');return el?[el.clientWidth||360,el.clientHeight||480]:[360,480]}
 function fitTo(b,pad){
   const [cw,ch]=mapSize();let [x0,y0,x1,y1]=b;
-  const L=24+pad,Rt=64+pad,T=28+pad,B=58+pad;
+  const L=24+pad,Rt=64+pad,T=52+pad,B=46+pad;
   const bw=Math.max(20,x1-x0),bh=Math.max(20,y1-y0);
   const s=Math.max(bw/Math.max(80,cw-L-Rt),bh/Math.max(80,ch-T-B));
   const sx=(cw-L-Rt)*s-bw,sy=(ch-T-B)*s-bh;
@@ -952,24 +1077,38 @@ function fitTo(b,pad){
 }
 function fitNetwork(){const ps=S.routes.filter(r=>r.open).map(r=>routePoly(S.op,r.id));fitTo(bounds(ps),10)}
 function fitGB(){fitTo([150,20,780,1120],0)}
+function sizeMap(){const w=$('#mapwrap');if(!w)return;const t=$('#top'),b=$('#tabs');w.style.height=Math.max(320,innerHeight-(t?t.offsetHeight:110)-(b?b.offsetHeight:70)-26)+'px'}
 function applyVB(){
   const svg=$('#map');if(!svg||!ui.vb)return;const [cw,ch]=mapSize();
   ui.vb.h=ui.vb.w*ch/cw;const v=ui.vb;svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);
-  const s=v.w/cw;if(Math.abs(s-(ui.mapS||0))>1e-6){ui.mapS=s;scaleMap()}else{clearTimeout(ui.lblT);ui.lblT=setTimeout(placeLabels,60)}
+  const s=v.w/cw;if(Math.abs(s-(ui.mapS||0))>1e-6){ui.mapS=s;scaleMap();moveTrains()}else{clearTimeout(ui.lblT);ui.lblT=setTimeout(placeLabels,60)}
 }
+const carK=()=>clamp(2.1-(ui.mapS||1)*1.1,.8,1.9);
 function scaleMap(){
   const s=ui.mapS,svg=$('#map');if(!svg)return;
-  svg.classList.toggle('zoomed',s<.32);
   svg.querySelectorAll('.st').forEach(e=>e.setAttribute('r',2.2*s));
   svg.querySelectorAll('.term').forEach(e=>e.setAttribute('r',4.5*s));
-  svg.querySelectorAll('.tr').forEach(e=>e.setAttribute('r',4.6*s));
   svg.querySelectorAll('.lbl').forEach(e=>{const big=e.classList.contains('lbl-term');e.setAttribute('font-size',(big?12.5:10.5)*s);e.setAttribute('stroke-width',3.2*s)});
+  placeBubbles();
   placeLabels();
 }
+function placeBubbles(){
+  const s=ui.mapS||1,placed=[];
+  document.querySelectorAll('#m-bubs .bub').forEach(e=>{
+    const P=routePoly(S.op,e.dataset.mr),w=+e.dataset.w;let best=null;
+    for(const f of [.34,.5,.22,.64,.42,.78,.28]){const [x,y]=pointAt(P,f),box=[x-w/2*s,y-30*s,x+w/2*s,y-6*s];
+      if(!placed.some(p=>box[0]<p[2]&&box[2]>p[0]&&box[1]<p[3]&&box[3]>p[1])){best=[x,y,box];break}}
+    if(!best){const [x,y0]=pointAt(P,.34);for(let k=1;k<12;k++){const y=y0-k*23*s,box=[x-w/2*s,y-30*s,x+w/2*s,y-6*s];if(!placed.some(p=>box[0]<p[2]&&box[2]>p[0]&&box[1]<p[3]&&box[3]>p[1])){best=[x,y,box];break}}}
+    if(!best){const [x,y]=pointAt(P,.34);best=[x,y,[x,y,x,y]]}
+    placed.push(best[2]);e.setAttribute('transform',`translate(${best[0]} ${best[1]}) scale(${s})`);
+  });
+  ui.bubBoxes=placed;
+}
 function placeLabels(){
-  const s=ui.mapS,svg=$('#map'),zoomed=s<.32,placed=[],v=ui.vb;if(!v)return;
-  const sb=svg.getBoundingClientRect();
-  document.querySelectorAll('.mapctl,.maplegend').forEach(el=>{const b=el.getBoundingClientRect();placed.push([v.x+(b.left-sb.left-4)*s,v.y+(b.top-sb.top-4)*s,v.x+(b.right-sb.left+4)*s,v.y+(b.bottom-sb.top+4)*s])});
+  const s=ui.mapS,svg=$('#map'),v=ui.vb;if(!svg||!v)return;
+  const zoomed=s<.32,placed=[],sb=svg.getBoundingClientRect();
+  document.querySelectorAll('.mapctl,.hud,.ticker').forEach(el=>{const b=el.getBoundingClientRect();if(b.width)placed.push([v.x+(b.left-sb.left-4)*s,v.y+(b.top-sb.top-4)*s,v.x+(b.right-sb.left+4)*s,v.y+(b.bottom-sb.top+4)*s])});
+  (ui.bubBoxes||[]).forEach(b=>placed.push(b));
   const inView=b=>b[0]>v.x+4*s&&b[2]<v.x+v.w-4*s&&b[1]>v.y+4*s&&b[3]<v.y+v.h-4*s;
   const rank=e=>(e.classList.contains('lbl-term')?0:2)+(e.classList.contains('off')?1:0);
   const els=[...svg.querySelectorAll('.lbl')].sort((a,b)=>rank(a)-rank(b));
@@ -986,38 +1125,42 @@ function placeLabels(){
 }
 function zoomAt(f,px,py){
   const v=ui.vb,[cw]=mapSize(),s=v.w/cw,wx=v.x+px*s,wy=v.y+py*s;
-  const w=clamp(v.w/f,18,1100),s2=w/cw;v.x=wx-px*s2;v.y=wy-py*s2;v.w=w;applyVB();
+  const w=clamp(v.w/f,14,1100),s2=w/cw;v.x=wx-px*s2;v.y=wy-py*s2;v.w=w;applyVB();
 }
+
+/* render */
 function renderMap(){
   const others=Object.values(OPS).filter(o=>o.id!==S.op).flatMap(o=>o.routes.map(r=>routePoly(o.id,r.id).d)).join('');
   main.innerHTML=`
-  <section class="mapwrap">
-    <svg id="map" role="img" aria-label="Map of your network. Drag to pan, pinch or scroll to zoom, tap a line for details.">
+  <section class="mapwrap" id="mapwrap">
+    <svg id="map" role="img" aria-label="Map of your network. Drag to pan, pinch or scroll to zoom, tap a train or a line.">
+      ${topDefs(LIV[S.op])}
       <rect class="sea" x="-2000" y="-2000" width="5000" height="5000"/>
       <path class="land far" d="${GEO.fr}"/><path class="land far" d="${GEO.ie}"/><path class="land" d="${GEO.im}"/><path class="land" d="${GEO.gb}"/>
       <path class="other" d="${others}"/>
-      <g id="m-routes"></g><g id="m-stations"></g><g id="m-trains"></g><g id="m-labels"></g>
+      <g id="m-routes"></g><g id="m-stations"></g><g id="m-labels"></g><g id="m-trains"></g><g id="m-bubs"></g><g id="m-fx"></g>
     </svg>
+    <div class="hud" id="hud"></div>
     <div class="mapctl"><button data-a="mz" data-v="1.6" aria-label="Zoom in">+</button><button data-a="mz" data-v="0.625" aria-label="Zoom out">−</button><button data-a="mfit" data-v="net" aria-label="Fit my network">Fit</button><button data-a="mfit" data-v="gb" aria-label="Show all of Britain">GB</button></div>
-    <div class="maplegend" aria-hidden="true"><span><i style="background:var(--route)"></i>Your line</span><span><i style="background:var(--bad);opacity:.6;height:6px"></i>Overcrowded</span><span><i class="dot"></i>Train</span></div>
-  </section>
-  <section id="mapinfo"></section>`;
-  ui.mapS=0;
+    <div class="mapcard" id="mapcard" hidden></div>
+    <button class="ticker" data-a="tab" data-v="office" aria-label="Latest news. Open the office."><span class="marquee" id="tick"></span></button>
+  </section>`;
+  ui.mapS=0;ui.fx=[];ui.tickTxt='';ui.segs=ui.segs||{};
+  sizeMap();
   if(!ui.vb||ui.vbOp!==S.op){ui.vbOp=S.op;fitNetwork()}
   bindMap();updateMap();applyVB();
 }
 function updateMap(){
   const svg=$('#map');if(!svg)return;
-  const rs=S.routes,sel=ui.mapSel,stn=new Map();
+  const sel=ui.mapSel||{},stn=new Map();
   let rh='';
-  for(const r of rs){
+  for(const r of S.routes){
     const P=routePoly(S.op,r.id);if(!P.d)continue;
     const act=r.open?routeUnits(S,r).length:0,load=r.t&&r.open?r.t.load:0;
-    const w=r.locked&&!r.open?2:clamp(2.5+r.demand/5000,2.5,7);
-    if(r.id===sel)rh+=`<path class="rl sel" d="${P.d}" style="stroke-width:${w+5}px"/>`;
-    if(r.open&&act&&load>1.05)rh+=`<path class="rl halo" d="${P.d}" style="stroke-width:${w+(load>1.2?9:6)}px"/>`;
-    const cls=!r.open?'locked':!act?'idle':'live';
-    rh+=`<path class="rl ${cls}" d="${P.d}" style="stroke-width:${w}px"/>`;
+    const w=!r.open?2:clamp(3+r.demand/5000,3,8);
+    if(sel.t==='route'&&sel.id===r.id)rh+=`<path class="rl sel" d="${P.d}" style="stroke-width:${w+6}px"/>`;
+    if(r.open&&act&&load>1.05)rh+=`<path class="rl halo" d="${P.d}" style="stroke-width:${w+(load>1.2?10:7)}px"/>`;
+    rh+=`<path class="rl bed" d="${P.d}" style="stroke-width:${w+2.5}px"/><path class="rl ${!r.open?'locked':!act?'idle':'live'}" d="${P.d}" style="stroke-width:${w}px"/>`;
     rh+=`<path class="hit" d="${P.d}" data-mr="${r.id}"/>`;
     [r.from,r.to].forEach(n=>{if(GEO.st[n])stn.set(n,{t:1,open:r.open||(stn.get(n)||{}).open})});
     r.calls.forEach(n=>{if(GEO.st[n]&&!stn.has(n))stn.set(n,{t:0,open:r.open})});
@@ -1029,33 +1172,97 @@ function updateMap(){
     lh+=`<text class="lbl ${o.t?'lbl-term':'lbl-call'}${o.open?'':' off'}" data-x="${x}" data-y="${y}" x="${x}" y="${y}">${n}</text>`}
   $('#m-stations').innerHTML=sh;$('#m-labels').innerHTML=lh;
   // trains
-  let th='';ui.mtr=[];
-  for(const r of S.routes){if(!r.open)continue;const P=routePoly(S.op,r.id);if(!P.pts.length)continue;
+  let th='';const list=[];
+  for(const r of openRoutes(S)){
+    const P=routePoly(S.op,r.id);if(!P.pts.length)continue;
     const us=routeUnits(S,r,true),act=us.filter(u=>u.st==='active');
-    act.forEach((u,i)=>{th+=`<circle class="tr" r="1" data-k="${ui.mtr.length}"/>`;ui.mtr.push({P,tt:tripH(C[u.cls],r),o:i/act.length*2})});
-    us.filter(u=>u.st!=='active'&&u.st!=='order').forEach(u=>{const [x,y]=pointAt(P,.15+(hash(u.id)%70)/100);th+=`<circle class="tr down" r="1" cx="${x}" cy="${y}"/>`});
+    const trips=act.reduce((a,u)=>a+tripsPerDay(C[u.cls],r),0),rpt=r.t&&trips?r.t.rev/trips:0;
+    act.forEach((u,i)=>list.push({u,P,tt:tripH(C[u.cls],r),o:i/act.length*2,rpt}));
+    us.filter(u=>u.st==='repair'||u.st==='refurb').forEach(u=>list.push({u,P,down:u.st==='repair',parked:true,fixed:.12+(hash(u.id)%76)/100}));
   }
+  for(const m of list){const md=MODEL[m.u.cls];m.cars=carsOf(m.u.cls);m.len=md.len;const isSel=sel.t==='unit'&&sel.id===m.u.id;
+    th+=`<g class="train${m.down?' down':''}${m.parked&&!m.down?' parked':''}${isSel?' sel':''}">${m.cars.map(t=>`<use href="#car-${t==='F'?md.nose:t==='R'?md.rear:t}"/>`).join('')}${m.down?'<g class="alert"><circle r="7"/><text y="4" text-anchor="middle">!</text></g>':''}</g>`}
   $('#m-trains').innerHTML=th;
-  ui.mtrEls=[...document.querySelectorAll('#m-trains .tr:not(.down)')];
-  moveTrains();
+  [...$('#m-trains').children].forEach((g,i)=>{const m=list[i];m.uses=[...g.querySelectorAll('use')];m.alert=g.querySelector('.alert')});
+  ui.mtr=list;
+  // crowd bubbles
+  let bh='';
+  for(const r of openRoutes(S)){
+    const P=routePoly(S.op,r.id);if(!P.pts.length||!r.t)continue;
+    const act=routeUnits(S,r).length;let label=null,cls='';
+    if(!act){label='No trains';cls='idle'}
+    else if(r.t.load>1.05){const left=Math.round(r.t.dem-r.t.cap);label=left>0?(left>=1000?(left/1000).toFixed(1)+'k':left)+' stuck':'Packed';}
+    if(!label)continue;
+    const [x,y]=pointAt(P,.34),w=26+label.length*6.2;
+    bh+=`<g class="bub ${cls}" data-mr="${r.id}" data-w="${w}" data-x="${x}" data-y="${y}" transform="translate(${x} ${y}) scale(${ui.mapS||1})"><rect x="${-w/2}" y="-28" width="${w}" height="20" rx="10"/><path d="M-5-9 0-2 5-9Z"/><circle cx="${-w/2+11}" cy="-21.5" r="2.6"/><path d="M${-w/2+6.5}-12.5a4.5 4.5 0 0 1 9 0Z"/><text x="${-w/2+19}" y="-14">${label}</text></g>`;
+  }
+  $('#m-bubs').innerHTML=bh;placeBubbles();
+  updateHud();
   if(ui.mapS)scaleMap();
-  renderMapInfo();
+  moveTrains();
+  renderMapCard();
+}
+function updateHud(){
+  const op=OPS[S.op],P=S.period,l=S.last;
+  const ppm=P.n?P.ppm/P.n:(l?l.ppm:null),sat=P.n?P.sat/P.n:(l?l.sat:null);
+  $('#hud').innerHTML=`<span class="chip"><small>On time</small><b class="${ppm==null?'':tone(ppm,op.target,op.target-6)}">${ppm==null?'—':ppm.toFixed(0)+'%'}</b></span><span class="chip"><small>Happy</small><b class="${sat==null?'':tone(sat,70,50)}">${sat==null?'—':Math.round(sat)+'%'}</b></span><span class="chip"><small>DfT review</small><b>${28-(S.day%28)}d</b></span>`;
+  const n=S.news[0];const txt=n?n.text:'';
+  if(txt!==ui.tickTxt){ui.tickTxt=txt;const t=$('#tick');if(t){t.textContent=txt;t.className='marquee '+(n?n.tone:'');t.style.animation='none';void t.offsetWidth;t.style.animation=''}}
+}
+function spawnCash(P,d,amt){
+  if(!ui.fx||ui.fx.length>=8||amt<500)return;const g=$('#m-fx');if(!g)return;
+  const now=performance.now(),key=P.d.length+':'+Math.round(d);ui.fxCd=ui.fxCd||{};if(ui.fxCd[key]>now)return;ui.fxCd[key]=now+1100;
+  const [x,y]=pointDir(P,d);const el=document.createElementNS('http://www.w3.org/2000/svg','text');
+  const s=ui.mapS||1;el.setAttribute('class','fxcash');el.setAttribute('text-anchor','middle');el.setAttribute('font-size',13*s);el.setAttribute('x',x);el.setAttribute('y',y-10*s);el.textContent='+'+money(amt);g.appendChild(el);
+  ui.fx.push({el,x,y,t0:performance.now()});
 }
 function moveTrains(){
-  if(!ui.mtrEls)return;const hrs=ui.frac*19;
-  ui.mtrEls.forEach((el,i)=>{const m=ui.mtr[i];if(!m)return;let f;
-    if(reduce.matches)f=m.o/2;else{const ph=((hrs/m.tt)+m.o)%2;f=ph<1?ph:2-ph}
-    const [x,y]=pointAt(m.P,f);el.setAttribute('cx',x);el.setAttribute('cy',y)});
+  if(!ui.mtr)return;
+  const s=ui.mapS||1,k=carK(),hrs=(S.day+ui.frac)*19,still=reduce.matches,live=!paused();
+  for(const m of ui.mtr){
+    if(!m.uses)continue;let f;
+    if(m.parked)f=m.fixed;
+    else if(still)f=m.o/2;
+    else{const ph=((hrs/m.tt)+m.o)%2,seg=ph<1?0:1;let x=ph%1;x=clamp((x-.06)/.88,0,1);x=x*x*(3-2*x);f=seg?1-x:x;
+      const prev=ui.segs[m.u.id];if(live&&prev!=null&&prev!==seg&&m.rpt>0)spawnCash(m.P,prev===0?m.P.len:0,m.rpt);ui.segs[m.u.id]=seg}
+    const n=m.cars.length,step=m.len*k*1.1*s;let T=step*n,sc=1;if(T>m.P.len*.9){sc=m.P.len*.9/T;T*=sc}
+    const a=f*(m.P.len-T);m.pos=[];
+    for(let i=0;i<n;i++){
+      const [x,y,ang]=pointDir(m.P,a+T-(i+.5)*step*sc),t=m.cars[i];
+      m.uses[i].setAttribute('transform',`translate(${x} ${y}) rotate(${t==='R'?ang+180:ang}) scale(${s*k*sc*m.len/10} ${s*k*sc*1.35})`);
+      m.pos.push([x,y]);
+    }
+    if(m.alert){const [x,y]=m.pos[Math.floor(n/2)];m.alert.setAttribute('transform',`translate(${x} ${y-13*s}) scale(${s})`)}
+  }
+  if(ui.fx&&ui.fx.length){const now=performance.now();
+    ui.fx=ui.fx.filter(f=>{const age=(now-f.t0)/1500;if(age>1){f.el.remove();return false}
+      f.el.setAttribute('x',f.x);f.el.setAttribute('y',f.y-(10+age*26)*s);f.el.setAttribute('font-size',13*s);f.el.setAttribute('stroke-width',3*s);f.el.style.opacity=age<.7?1:(1-age)/.3;return true})}
 }
-function renderMapInfo(){
-  const el=$('#mapinfo');if(!el)return;
-  const r=ui.mapSel?routeOf(S,ui.mapSel):null;
-  if(!r){el.innerHTML=`<p class="mute" style="margin:0;font-size:14px">Tap a line to inspect it. A red glow means overcrowded, a red dashed line has no trains, grey dashes are routes you could bid for.</p>`;return}
-  if(!r.open){el.innerHTML=`<div class="card"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div>
-    <div class="meta"><span class="tag plain">${KIND[r.kind]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
-    <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m</small></button><button class="btn ghost" data-a="msel" data-v="">Close</button></div></div>`;return}
-  el.innerHTML=routeCard(r).replace('<button class="card"','<div class="card"').replace(/<\/button>\s*$/,'</div>').replace('data-a="route"','data-x="1"')
-    +`<div class="btns" style="margin-top:8px"><button class="btn" data-a="route" data-v="${r.id}">Manage this route<small>Trains and fares</small></button><button class="btn ghost" data-a="msel" data-v="">Deselect</button></div>`;
+const rushCost=u=>C[u.cls].cars*30000+60000;
+function renderMapCard(){
+  const el=$('#mapcard');if(!el)return;const sel=ui.mapSel;
+  if(!sel){el.hidden=true;el.innerHTML='';return}
+  if(sel.t==='unit'){
+    const u=S.units.find(x=>x.id===sel.id);if(!u||u.st==='order'||u.st==='depot'){ui.mapSel=null;el.hidden=true;return}
+    const c=C[u.cls],r=u.route?routeOf(S,u.route):null,rc=rushCost(u);
+    const line=u.st==='repair'?`<span class="bad">Broken down</span>${r?` on the ${r.to} line`:''}. Fitters get there in ${u.days} day${u.days===1?'':'s'}.`:u.st==='refurb'?`In the works for refurbishment. Back in ${u.days} days.`:r?`Running ${r.from} – ${r.to}. ${tripsPerDay(c,r)} trips a day.`:'';
+    el.innerHTML=`<div class="mc-head"><div><div class="kicker">Class ${c.id} ${c.name} · ${c.builder}</div><div class="cls-no">${unitName(u)}</div></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      ${sideView(u.cls,S.op)}
+      <div class="meta"><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph · built ${u.built}</span>${stars(Math.min(5,c.comfort+u.cb))}</div>
+      <p class="mc-line">${line} <span class="mute">Reliability ${Math.round(u.rel*100)}%.</span></p>
+      <div class="btns">${u.st==='repair'?`<button class="btn" data-a="rush" data-v="${u.id}" ${S.cash<rc?'disabled':''}>Rush a fitter out<small>${money(rc)} · back in service now</small></button>`:''}<button class="btn ghost" data-a="unit" data-v="${u.id}">Train details<small>Move, refurbish or sell</small></button></div>`;
+  } else {
+    const r=routeOf(S,sel.id);if(!r){ui.mapSel=null;el.hidden=true;return}
+    if(!r.open){el.innerHTML=`<div class="mc-head"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      <p class="mc-line">Up for grabs: about ${r.demand.toLocaleString('en-GB')} journeys a day over ${r.mi} miles.</p>
+      <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m · then add trains</small></button></div>`}
+    else{const t=r.t,act=routeUnits(S,r).length,load=t?t.load:0,prof=t?t.rev-t.cost:0;
+      el.innerHTML=`<div class="mc-head"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      <div class="stats"><div class="stat"><span class="k">Trains</span><span class="v">${act}</span></div><div class="stat"><span class="k">On time</span><span class="v ${t&&act?tone(t.ppm,OPS[S.op].target,OPS[S.op].target-8):''}">${t&&act?Math.round(t.ppm)+'%':'—'}</span></div><div class="stat"><span class="k">Happy</span><span class="v ${tone(r.sat,70,50)}">${Math.round(r.sat)}%</span></div><div class="stat"><span class="k">Profit/day</span><span class="v ${prof<0?'bad':''}">${t?money(prof):'—'}</span></div></div>
+      <div><div class="row" style="font-size:12.5px;margin-bottom:4px"><span class="mute">Seats filled</span><span class="num">${t?Math.round(load*100)+'%':'—'}</span></div><div class="bar"><i class="${load>1.15?'bad':load>1?'warn':''}" style="width:${Math.min(100,load/1.5*100)}%"></i><span class="mark" style="left:${100/1.5}%"></span></div></div>
+      <div class="btns"><button class="btn" data-a="shopfor" data-v="${r.id}">Add a train<small>Buy one for this line</small></button><button class="btn ghost" data-a="route" data-v="${r.id}">Manage line<small>Trains and fares</small></button></div>`}
+  }
+  el.hidden=false;
 }
 function bindMap(){
   const svg=$('#map');if(!svg)return;
@@ -1064,24 +1271,28 @@ function bindMap(){
   svg.addEventListener('pointerdown',e=>{svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,rel(e));if(pts.size===1)moved=0;last=null});
   svg.addEventListener('pointermove',e=>{
     if(!pts.has(e.pointerId))return;const p=rel(e),prev=pts.get(e.pointerId);pts.set(e.pointerId,p);
-    if(pts.size===1){const dx=p[0]-prev[0],dy=p[1]-prev[1];moved+=Math.abs(dx)+Math.abs(dy);const s=ui.vb.w/mapSize()[0];ui.vb.x-=dx*s;ui.vb.y-=dy*s;applyVB()}
+    if(pts.size===1){const dx=p[0]-prev[0],dy=p[1]-prev[1];moved+=Math.abs(dx)+Math.abs(dy);if(moved<6)return;const s=ui.vb.w/mapSize()[0];ui.vb.x-=dx*s;ui.vb.y-=dy*s;applyVB()}
     else if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;moved+=99;
       if(last){const s=ui.vb.w/mapSize()[0];ui.vb.x-=(mx-last.mx)*s;ui.vb.y-=(my-last.my)*s;zoomAt(d/last.d,mx,my)}last={d,mx,my}}
   });
   const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);last=null;
     if(e.type==='pointerup'&&pts.size===0&&moved<8){
-      const hit=[...document.elementsFromPoint(e.clientX,e.clientY)].find(x=>x.dataset&&x.dataset.mr);
-      ui.mapSel=hit?hit.dataset.mr:null;updateMap();
+      const [px,py]=rel(e),s=ui.mapS,wx=ui.vb.x+px*s,wy=ui.vb.y+py*s;
+      let best=null,bd=16*s;
+      for(const m of ui.mtr||[])for(const [x,y] of m.pos||[]){const dd=Math.hypot(x-wx,y-wy);if(dd<bd){bd=dd;best=m}}
+      if(best)ui.mapSel={t:'unit',id:best.u.id};
+      else{const hit=[...document.elementsFromPoint(e.clientX,e.clientY)].map(x=>x.closest&&x.closest('[data-mr]')).find(Boolean);ui.mapSel=hit?{t:'route',id:hit.dataset.mr}:null}
+      updateMap();
     }};
   svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
   svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=rel(e);zoomAt(e.deltaY<0?1.2:1/1.2,x,y)},{passive:false});
 }
-window.addEventListener('resize',()=>{if(ui.tab==='map')applyVB()});
+window.addEventListener('resize',()=>{if(ui.tab==='map'){sizeMap();applyVB()}});
 
 /* ---------- Goals / more ---------- */
-function renderMore(){
+function moreHTML(){
   const op=OPS[S.op];
-  main.innerHTML=`
+  return `
   <section class="sec"><h2>Goals</h2><div class="panel">${ACH.map(([id,n,d])=>`<div class="goal ${S.ach[id]?'done':''}"><span class="tick">${S.ach[id]?'✓':''}</span><span><b>${n}</b><p>${d}</p></span></div>`).join('')}</div></section>
   <section class="sec"><h2>DfT period reports</h2><div class="panel">${S.reports.length?`<div class="report"><div class="mute">Period</div><div class="mute">PPM · Happy · Profit</div>${S.reports.map(p=>`<div>P${p.pno} ${p.yr}/${String((p.yr+1)%100).padStart(2,'0')}${p.bad?' <span class="tag bad">Warning</span>':''}</div><div><span class="${p.ppm>=p.target?'good':'bad'}">${p.ppm.toFixed(1)}%</span> · ${Math.round(p.sat)}% · ${money(p.profit)}</div>`).join('')}</div>`:'<p class="mute" style="margin:0">Your first review is at the end of this 28-day period.</p>'}</div></section>
   <section class="sec"><h2>How it works</h2><div class="panel prose">
@@ -1121,7 +1332,7 @@ function reportModal(s,p){
 function gameOverModal(s){
   const op=OPS[s.op];
   return {kicker:'Operator of last resort',title:s.over==='bust'?'Out of money':'Your services have been taken over',body:s.over==='bust'?`<p>${op.name} ran more than £25m into the red. The administrators have arrived, and they've brought clipboards.</p>`:`<p>After three DfT warnings, the Secretary of State has transferred ${op.name}'s services to Great British Railways. Your desk is being cleared as we speak.</p>`
-   +`<p class="mute">You lasted ${s.periods} rail period${s.periods===1?'':'s'} (${s.day} days) with a best cash balance of ${money(s.best.cash)}.</p>`,choices:[{label:'Try again',sub:'Pick an operator',fn:()=>{S=null;save();ui.tab='hq';renderAll()}}]};
+   +`<p class="mute">You lasted ${s.periods} rail period${s.periods===1?'':'s'} (${s.day} days) with a best cash balance of ${money(s.best.cash)}.</p>`,choices:[{label:'Try again',sub:'Pick an operator',fn:()=>{S=null;save();ui.tab='map';renderAll()}}]};
 }
 function showModal(){
   if(ui.modal||!ui.modalQ.length){if(!ui.modal)$('#modal').innerHTML='';return}
@@ -1147,7 +1358,7 @@ function renderSheet(){
 /* ---------- render ---------- */
 function renderMain(){
   if(!S){renderChooser();return}
-  ({hq:renderHQ,map:renderMap,routes:renderRoutes,fleet:renderFleet,shop:renderShop,more:renderMore})[ui.tab]();
+  ({map:renderMap,routes:renderRoutes,fleet:renderFleet,shop:renderShop,office:renderOffice}[ui.tab]||renderMap)();
 }
 function renderAll(){
   const has=!!S;
@@ -1159,7 +1370,7 @@ function tickRender(){
   if(!S)return;
   renderTop();renderTabs();
   if(ui.ptr){ui.dirty=true;return}
-  if(ui.tab==='hq')updateHQ();
+  if(ui.tab==='office')updateHQ();
   else if(ui.tab==='map')updateMap();
   else {const y=window.scrollY;renderMain();window.scrollTo(0,y)}
   if(ui.sheet&&!ui.ptr)renderSheet();
@@ -1174,9 +1385,9 @@ function assign(uid,rid){
 }
 const A={
  pickop:v=>{ui.pickOp=v;renderChooser();const p=document.querySelector('.panel.sec');if(p)p.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},
- start:()=>{S=newGame(ui.pickOp);ui.vb=null;ui.mapSel=null;S.speed=1;ui.tab='hq';ui.sheet=null;save();renderAll();window.scrollTo(0,0);
+ start:()=>{S=newGame(ui.pickOp);ui.vb=null;ui.mapSel=null;S.speed=1;ui.tab='map';ui.segs={};ui.sheet=null;save();renderAll();window.scrollTo(0,0);
    const op=OPS[S.op];
-   EMIT.modal({kicker:'Day one',title:`You run ${op.name} now`,body:`<p>The DfT wants ${op.target}% of trains on time and passengers who don't hate you. They check every 28 days. Three bad reviews and Great British Railways takes over.</p><p><b>First job:</b> open <b>Routes</b> and look for red "Overcrowded" tags. Those lines need more trains.</p><p class="mute">Any train can run on any of your lines. Fast trains suit long routes; big trains suit crowded commuter lines.</p>`,choices:[{label:'Get the trains moving',fn:()=>{}}]});},
+   EMIT.modal({kicker:'Day one',title:`You run ${op.name} now`,body:`<p>The DfT wants ${op.target}% of trains on time and passengers who don't hate you. They check every 28 days. Three bad reviews and Great British Railways takes over.</p><p><b>First job:</b> red bubbles on the map mean people are being left on the platform. Tap one and add a train.</p><p>Tap any train to see it up close. If one breaks down, you can pay to rush a fitter out.</p><p class="mute">Any train can run on any of your lines. Fast trains suit long routes; big trains suit crowded commuter lines.</p>`,choices:[{label:'Get the trains moving',fn:()=>{}}]});},
  tab:v=>{ui.tab=v;ui.confirm=null;if(v!=='shop'&&ui.shopF.startsWith('route:'))ui.shopF='all';renderAll();window.scrollTo(0,0)},
  speed:v=>{S.speed=+v;renderTop()},
  route:v=>{ui.sheet={t:'route',id:v};ui.confirm=null;renderSheet()},
@@ -1199,7 +1410,8 @@ const A={
  shopfor:v=>{ui.shopF='route:'+v;ui.tab='shop';ui.sheet=null;renderAll();window.scrollTo(0,0)},
  mz:v=>{const [w,h]=mapSize();zoomAt(+v,w/2,h/2)},
  mfit:v=>{v==='gb'?fitGB():fitNetwork();applyVB()},
- msel:v=>{ui.mapSel=v||null;updateMap()},
+ msel:()=>{ui.mapSel=null;updateMap()},
+ rush:v=>{const u=S.units.find(x=>x.id===v);if(!u||u.st!=='repair')return;const c=rushCost(u);if(S.cash<c)return;S.cash-=c;u.st=u.route?'active':'depot';u.days=0;news(S,`Fitter rushed out to ${unitName(u)}. Moving again.`,'good');toast(`${unitName(u)} is moving again.`);save();renderTop();updateMap()},
  shopf:v=>{ui.shopF=v;renderMain()},
  fleetf:v=>{ui.fleetF=v;renderMain()},
  openroute:v=>{const r=routeOf(S,v);if(!r||S.cash<r.cost*1e6)return;S.cash-=r.cost*1e6;r.open=true;r.sat=72;news(S,`Bid won: ${r.from} – ${r.to} is yours. Get some trains on it.`,'good');unlock(S,'expand');save();ui.sheet={t:'route',id:r.id};renderAll()},
@@ -1224,12 +1436,12 @@ function frame(ts){
   }
   ui.frac=S?ui.acc/DAY_MS:0;
   const p=$('#dayprog');if(p)p.style.width=(ui.frac*100)+'%';
-  if(S&&ui.tab==='hq'){
+  if(S&&ui.tab==='office'){
     ui.boardT+=dt;if(ui.boardT>500){ui.boardT=0;updateBoard()}
     if(ui.pips&&!reduce.matches){const hrs=ui.frac*19;for(const el of ui.pips){const tt=+el.dataset.tt,ph=((hrs/tt)+(+el.dataset.o))%2;el.style.left=((ph<1?ph:2-ph)*96+2)+'%'}}
     else if(ui.pips){for(const el of ui.pips){el.style.left=(+el.dataset.o/2*96+2)+'%'}}
   }
-  if(S&&ui.tab==='map'&&!paused())moveTrains();
+  if(S&&ui.tab==='map'&&ui.mtr&&(!paused()||(ui.fx&&ui.fx.length)))moveTrains();
   requestAnimationFrame(frame);
 }
 document.addEventListener('visibilitychange',()=>{ui.last=0;if(document.hidden)save()});
@@ -1237,7 +1449,7 @@ document.addEventListener('visibilitychange',()=>{ui.last=0;if(document.hidden)s
 /* ---------- boot ---------- */
 function start(data){
   S=(data&&data.S)||load();
-  if(data&&data.ui)Object.assign(ui,{tab:data.ui.tab||'hq'});
+  if(data&&data.ui&&TABN[data.ui.tab])ui.tab=data.ui.tab;
   ui.frac=0;renderAll();requestAnimationFrame(frame);
 }
 window.claude?.hot?.snapshot?.(()=>({S,ui:{tab:ui.tab}}));

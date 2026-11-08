@@ -6,6 +6,6 @@ A single-file mobile game: run a real UK train operating company (SWR, Southern,
 - Progress saves in the browser's local storage.
 - Any train can run on any line: pick by seats, speed, comfort, reliability and price.
 - Every 28-day rail period the DfT reviews PPM and satisfaction. Three warnings and Great British Railways takes over.
-- Map tab: real coastline (Natural Earth) and real station coordinates (uk-railway-stations dataset). Pinch or scroll to zoom, drag to pan, tap a line to manage it.
+- The map is the home screen: real coastline (Natural Earth) and real station coordinates (uk-railway-stations dataset). Every unit is drawn car by car in its operator's colours, with class-accurate car counts, lengths and cab shapes. Tap a train for a side-on view, tap a red bubble to fix a crowded line, rush a fitter to a broken-down train.
 
 Unofficial fan game. Not affiliated with any operator. Fleet, route and money figures are approximate.
