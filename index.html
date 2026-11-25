@@ -1,0 +1,1567 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Right Time Railway</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@700;900&family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-thumb phone app. Sticky control strip on top, the map of Britain as the home screen, cards below, tab bar pinned to the bottom. Light and friendly, like a holiday map; the dot-matrix signs stay dark because they're signs. */
+:root{
+  color-scheme: light;
+  --bg:#eef4f8;          /* page */
+  --panel:#ffffff;       /* card */
+  --panel-2:#f2f6fa;     /* raised */
+  --line:#d8e2ec;        /* hairline */
+  --ink:#1d2b45;         /* text */
+  --mute:#5c6c84;        /* secondary text */
+  --amber:#ffb22e;       /* sunny yellow: buttons, LEDs */
+  --accent-ink:#a65800;  /* yellow's readable text partner */
+  --amber-dim:#5a3f0c;
+  --board:#151a22;       /* dot-matrix sign */
+  --good:#16935a;
+  --bad:#e0443f;
+  --warn:#c98000;
+  --route:#55657c;       /* your lines on the map */
+  --halo:#ffffff;
+  --sea:#bfe3f3;         /* map sea */
+  --land:#dcefcf;
+  --land-far:#e7eee3;
+  --coast:#9cc796;
+  --shadow:0 1px 2px rgba(29,43,69,.06),0 6px 16px rgba(29,43,69,.06);
+  --f-board:'Doto', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --f-label:'Barlow Semi Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --f-body:'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --r:16px;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.4;-webkit-tap-highlight-color:transparent;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:0 calc(84px + env(safe-area-inset-bottom, 0px));overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:30;background:var(--bg)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h2{font-family:var(--f-label);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.mute{color:var(--mute)}
+.good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:18px;padding-block:14px 8px}
+
+/* top strip */
+.top{position:sticky;top:env(safe-area-inset-top, 0px);z-index:20;background:var(--bg);max-width:640px;margin:0 auto;padding-block:10px 8px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.opname{display:flex;align-items:baseline;gap:8px;min-width:0;font-family:var(--f-label)}
+.opname b{font-size:18px;letter-spacing:.02em}
+.opname span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.chip-dot{width:10px;height:10px;border-radius:2px;flex:none;align-self:center}
+.cash{font-family:var(--f-label);font-size:26px;font-weight:700;line-height:1}
+.cash small{font-size:14px;font-weight:600;margin-left:6px}
+.date{font-family:var(--f-label);font-size:13px;color:var(--mute);letter-spacing:.03em}
+.speed{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex:none}
+.speed button{min-width:40px;height:32px;border-radius:7px;font-family:var(--f-label);font-weight:700;font-size:14px;color:var(--mute)}
+.speed button.on{background:var(--amber);color:#1a1205}
+.dayprog{height:3px;background:var(--panel-2);border-radius:2px;overflow:hidden}
+.dayprog i{display:block;height:100%;width:0;background:var(--amber)}
+.grade{font-family:var(--f-board);font-weight:900;font-size:22px;color:var(--amber);line-height:1;padding:4px 8px;border:1px solid var(--amber-dim);border-radius:6px;background:var(--board)}
+.grade-wrap{display:flex;align-items:center;gap:8px;flex:none}
+.grade-wrap .warns{display:flex;gap:3px}
+.warns i{width:8px;height:8px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line)}
+.warns i.on{background:var(--bad);border-color:var(--bad)}
+
+/* station board */
+.board{background:var(--board);border-radius:10px;border:1px solid #222;padding:12px 12px 10px;position:relative;overflow:hidden;
+  background-image:radial-gradient(rgba(255,178,46,.06) 1px, transparent 1.2px);background-size:4px 4px}
+.board, .board *{font-family:var(--f-board);color:var(--amber);text-shadow:0 0 6px rgba(255,178,46,.35)}
+.board-head{display:flex;justify-content:space-between;align-items:baseline;font-weight:900;font-size:15px;letter-spacing:.04em;border-bottom:1px dashed var(--amber-dim);padding-bottom:6px;margin-bottom:6px;gap:8px}
+.board-head span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow{display:grid;grid-template-columns:48px minmax(0,1fr) 24px 84px;gap:6px;font-weight:700;font-size:14px;line-height:1.55}
+.brow > *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .st{text-align:right}
+.brow.empty{display:block;opacity:.8}
+.calling{margin-top:6px;border-top:1px dashed var(--amber-dim);padding-top:6px;overflow:hidden;white-space:nowrap;font-size:13px;font-weight:700}
+.marquee{display:inline-block;padding-left:100%;animation:marq 22s linear infinite}
+@keyframes marq{to{transform:translateX(-100%)}}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k{font-family:var(--f-label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.kpi .v{font-family:var(--f-label);font-size:26px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12.5px;color:var(--mute)}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+
+/* network strips */
+.strips{display:flex;flex-direction:column;gap:9px}
+.strip{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;font-family:var(--f-label);font-weight:700;font-size:13px}
+.strip .code:last-child{text-align:right}
+.track{position:relative;height:12px;border-radius:2px}
+.track::before{content:"";position:absolute;left:0;right:0;top:5px;height:2px;background:var(--line)}
+.track::before{background:var(--route);opacity:.5}
+.pip{position:absolute;top:1px;width:14px;height:10px;margin-left:-7px;border-radius:3px;background:var(--amber);box-shadow:0 0 6px rgba(255,178,46,.5)}
+.pip.down{background:var(--bad);box-shadow:none}
+.strip.idle .code{color:var(--bad)}
+
+/* log */
+.log{display:flex;flex-direction:column;gap:0;font-size:14px}
+.log div{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.log div:last-child{border-bottom:0}
+.log time{font-family:var(--f-label);color:var(--mute);font-size:13px;font-variant-numeric:tabular-nums}
+
+/* route + unit cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px;text-align:left;width:100%}
+button.card:active{background:var(--panel-2)}
+.rt-title{display:flex;align-items:baseline;gap:8px;font-family:var(--f-label);font-weight:700;font-size:18px;line-height:1.15;flex-wrap:wrap}
+.rt-title .arrow{color:var(--mute);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--mute)}
+.tag{font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid currentColor;white-space:nowrap}
+.tag.bad{color:var(--bad)} .tag.warn{color:var(--warn)} .tag.good{color:var(--good)} .tag.plain{color:var(--mute)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stat .k{font-family:var(--f-label);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.stat .v{font-family:var(--f-label);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--good)}
+.bar i.warn{background:var(--warn)} .bar i.bad{background:var(--bad)}
+.bar .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.5}
+
+.group-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-label);font-weight:700;font-size:16px;margin-top:4px}
+.unit{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;width:100%;text-align:left}
+.unit .no{font-family:var(--f-board);font-weight:900;color:var(--accent-ink);font-size:15px;white-space:nowrap}
+.unit .where{font-size:13.5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit .rel{font-family:var(--f-label);font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.list{display:flex;flex-direction:column;gap:7px}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{font-family:var(--f-label);font-weight:600;font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--mute);background:var(--panel)}
+.filters button.on{border-color:var(--amber);background:#fff4dc;color:var(--accent-ink)}
+
+.cls-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.cls-name{font-family:var(--f-label);font-weight:700;font-size:20px;line-height:1.1}
+.cls-name small{display:block;font-size:13px;font-weight:500;color:var(--mute);margin-top:2px}
+.cls-no{font-family:var(--f-board);font-weight:900;color:var(--accent-ink);font-size:22px;line-height:1;white-space:nowrap}
+.blurb{font-size:14px;color:var(--mute);margin:0}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font-family:var(--f-label);font-weight:700;font-size:15px;padding:10px 14px;border-radius:12px;box-shadow:0 2px 0 rgba(29,43,69,.12);background:var(--amber);color:#1b1305;display:inline-flex;flex-direction:column;align-items:flex-start;gap:0;line-height:1.15;flex:1 1 140px;text-align:left}
+.btn small{font-weight:600;font-size:12.5px;opacity:.75}
+.btn.ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.btn[disabled]{opacity:.38;cursor:not-allowed}
+.btn.sm{flex:0 0 auto;padding:7px 11px;font-size:14px}
+.stars{letter-spacing:1px;color:#e09a00;font-size:13px}
+
+/* sheet + modal */
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(29,43,69,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:640px;max-height:86vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;
+  padding:14px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));display:flex;flex-direction:column;gap:14px}
+.grab{width:42px;height:4px;background:var(--line);border-radius:2px;align-self:center}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.x{width:36px;height:36px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;flex:none;font-size:18px;color:var(--mute)}
+.overlay.center{align-items:center;padding:16px}
+.modal{width:100%;max-width:460px;max-height:86vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.kicker{font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+.modal h3{font-family:var(--f-label);font-size:24px;line-height:1.1}
+.modal p{margin:0}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.choices .btn{flex:none;width:100%}
+.report{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;font-size:15px}
+.report div:nth-child(even){text-align:right;font-family:var(--f-label);font-weight:700;font-variant-numeric:tabular-nums}
+.calls{font-size:13.5px;color:var(--mute);line-height:1.5}
+input[type=range]{width:100%;accent-color:var(--amber);height:28px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.subhead{font-family:var(--f-label);font-weight:700;font-size:15px;letter-spacing:.02em}
+.mini{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.mini:first-child{border-top:0}
+.mini .no{font-family:var(--f-board);font-weight:900;color:var(--accent-ink)}
+
+/* map */
+.mapwrap{position:relative;height:calc(100vh - 220px);min-height:320px;border-radius:18px;overflow:hidden;border:1px solid #a9cfe0;background:var(--sea);box-shadow:var(--shadow)}
+#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#map:active{cursor:grabbing}
+.sea{fill:var(--sea)}
+.land{fill:var(--land);stroke:var(--coast);stroke-width:.8px;vector-effect:non-scaling-stroke}
+.land.far{fill:var(--land-far)}
+.other{fill:none;stroke:#b7c4cf;stroke-width:1.2px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.rl{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.rl.bed{stroke:var(--halo)}
+.rl.live{stroke:var(--route);stroke-dasharray:none}
+.rl.locked{stroke:var(--mute);stroke-dasharray:3 6;opacity:.7}
+.rl.idle{stroke:var(--warn);stroke-dasharray:7 6}
+.rl.halo{stroke:var(--bad);opacity:.3}
+.rl.sel{stroke:var(--ink);opacity:.85}
+.hit{fill:none;stroke:transparent;stroke-width:22px;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
+.st{fill:var(--ink);opacity:.75;pointer-events:none}
+.term{fill:var(--panel);stroke:var(--ink);stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}
+.st.off,.term.off{opacity:.35}
+.lbl{fill:var(--ink);font-family:var(--f-label);font-weight:700;paint-order:stroke;stroke:var(--halo);stroke-linejoin:round;pointer-events:none}
+.lbl-call{fill:var(--mute);font-weight:500}
+.lbl.off{opacity:.55}
+.train{pointer-events:none}
+.train.sel use{filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 3px var(--amber))}
+.train.down use{filter:saturate(.35) brightness(.8)}
+.train.parked use{opacity:.55}
+.alert circle{fill:var(--bad)}
+.alert text{fill:#fff;font-family:var(--f-label);font-weight:800;font-size:12px}
+.alert{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.25}}
+.bub{cursor:pointer}
+.bub rect,.bub path,.bub circle{fill:var(--bad)}
+.bub circle,.bub path:last-of-type{fill:#fff}
+.bub path:first-of-type{fill:var(--bad)}
+.bub text{fill:#fff;font-family:var(--f-label);font-weight:700;font-size:11.5px}
+.bub.idle rect,.bub.idle path:first-of-type{fill:var(--warn)}
+.bub.idle text,.bub.idle circle,.bub.idle path:last-of-type{fill:#1b1305}
+.fxcash{fill:var(--good);font-family:var(--f-label);font-weight:800;paint-order:stroke;stroke:#fff;stroke-linejoin:round;pointer-events:none}
+.hud{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 76px);pointer-events:none}
+.chip{display:flex;flex-direction:column;line-height:1.05;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px 9px;opacity:.95}
+.chip small{font-family:var(--f-label);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.chip b{font-family:var(--f-label);font-size:18px;font-variant-numeric:tabular-nums}
+.mapctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:42px;height:40px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);font-family:var(--f-label);font-weight:700;font-size:15px;opacity:.95}
+.ticker{position:absolute;left:0;right:0;bottom:0;height:32px;background:var(--board);border-top:1px solid #222;overflow:hidden;white-space:nowrap;text-align:left;display:flex;align-items:center;
+  background-image:radial-gradient(rgba(255,178,46,.06) 1px, transparent 1.2px);background-size:4px 4px}
+.ticker .marquee{font-family:var(--f-board);font-weight:700;font-size:13.5px;color:var(--amber);text-shadow:0 0 6px rgba(255,178,46,.35);animation-duration:16s}
+.ticker .marquee.bad{color:#ff8a7a} .ticker .marquee.good{color:#7fe0a8}
+.mapcard{position:absolute;left:8px;right:8px;bottom:40px;max-height:calc(100% - 100px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(29,43,69,.22)}
+.mc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.mc-line{margin:0;font-size:14px}
+.side{width:100%;height:auto;display:block}
+.linkbtn{font-family:var(--f-label);font-weight:600;font-size:13.5px;color:var(--accent-ink)}
+
+/* coupling yard */
+.yrow{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:9px 10px 8px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);transition:border-color .15s,background .15s,transform .15s}
+.yrow.pool{background:var(--panel-2);border-style:dashed}
+.yrow.lock{opacity:.55}
+.yhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.yhead .no{font-family:var(--f-board);font-weight:900;color:var(--accent-ink);font-size:14px;white-space:nowrap}
+.yhead .mute{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ycars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;align-items:end;min-height:24px}
+.ycar{display:block;min-width:0}
+.ycs{display:block;width:100%;height:auto}
+.ycar.drag{cursor:grab;touch-action:none;border-radius:4px;outline:1.5px dashed transparent;outline-offset:1px}
+.ycar.drag:hover{outline-color:var(--amber)}
+.ycar.lifted{opacity:.25}
+.yempty{grid-column:1/-1;font-size:13px;color:var(--mute);padding:3px 0}
+body.dragging .yrow.valid{border-color:var(--amber);background:#fffaf0}
+body.dragging .yrow.nope{opacity:.45}
+body.dragging .yrow.over{border-color:var(--good);background:#eefaf3;transform:scale(1.015)}
+body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+.yrow.bump{animation:bump .45s ease}
+@keyframes bump{30%{transform:scale(1.03);border-color:var(--good)}}
+.drag-ghost{position:fixed;left:0;top:0;width:46px;z-index:70;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(29,43,69,.35))}
+.yhint{margin:0;font-size:14px;color:var(--mute)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--panel);box-shadow:0 -4px 16px rgba(29,43,69,.06);border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))}
+.tabs-in{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:640px}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--mute);border-radius:8px}
+.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button.on{color:var(--accent-ink)}
+.tabs button.on svg{fill:#ffe3a6}
+.badge{font-size:10px;background:var(--bad);color:#fff;border-radius:8px;padding:0 5px;margin-left:2px}
+
+.toast{pointer-events:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom, 0px));z-index:50;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+/* chooser */
+.hero{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.hero h1{font-family:var(--f-board);font-weight:900;color:var(--amber);font-size:34px;line-height:1.05;letter-spacing:.02em;background:var(--board);border-radius:14px;padding:14px 16px;text-shadow:0 0 10px rgba(255,178,46,.4);background-image:radial-gradient(rgba(255,178,46,.07) 1px, transparent 1.2px);background-size:4px 4px}
+.hero p{margin:0;color:var(--mute);max-width:52ch}
+.ops{display:flex;flex-direction:column;gap:8px}
+.op{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);text-align:left;width:100%}
+.op.on{border-color:var(--amber)}
+.op .code{font-family:var(--f-board);font-weight:900;color:var(--accent-ink);font-size:16px}
+.op b{font-family:var(--f-label);font-size:17px;display:block;line-height:1.15}
+.op small{color:var(--mute);font-size:13px}
+.diff{font-family:var(--f-label);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.goal{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--line);align-items:start}
+.goal:first-child{border-top:0}
+.goal .tick{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:13px;margin-top:1px}
+.goal.done .tick{background:var(--good);border-color:var(--good);color:#06140c;font-weight:800}
+.goal b{font-family:var(--f-label);font-size:16px}
+.goal p{margin:0;font-size:13.5px;color:var(--mute)}
+.prose p{margin:0 0 8px} .prose p:last-child{margin:0}
+.prose ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+@media (min-width:560px){ .kpis{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:370px){ .stats{grid-template-columns:repeat(2,minmax(0,1fr))} .brow{grid-template-columns:44px minmax(0,1fr) 20px 74px;font-size:13px} }
+@media (prefers-reduced-motion: reduce){ .marquee{animation:none;padding-left:0;white-space:normal} .calling{white-space:normal} }
+</style>
+
+<header class="top" id="top" hidden></header>
+<main id="main"></main>
+<nav class="tabs" id="tabs" hidden><div class="tabs-in" id="tabs-in"></div></nav>
+<div id="sheet"></div>
+<div id="modal"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===================== DATA ===================== */
+/*SIM-START*/
+const C = {};
+[
+ ['142','Pacer','BREL / Leyland','diesel',2,112,75,1,null,0,0.3,.78,1986,22,1.3,'A bus body bolted to a freight wagon chassis. Dragged out of storage. Passengers will notice.'],
+ ['150','Sprinter','BREL','diesel',2,140,75,2,null,0,0.8,.85,1985,24,1.3,'The workhorse nobody photographs.'],
+ ['156','Super Sprinter','Metro-Cammell','diesel',2,146,75,2,null,0,0.9,.86,1987,24,1.3,'Rural branch-line regular. Smells faintly of 1988.'],
+ ['158','Express Sprinter','BREL','diesel',2,138,90,2.5,null,0,1.2,.86,1990,26,1.3,'Air-con that works on a good day.'],
+ ['159','South Western Turbo','BREL','diesel',3,200,90,2.5,null,0,1.6,.85,1992,32,1.3,'Thrashes up Honiton bank with real commitment.'],
+ ['165','Networker Turbo','BREL','diesel',3,230,90,2.5,null,0,1.5,.86,1992,30,1.4,'Thames Valley diesel. Reliable and unloved.'],
+ ['170','Turbostar','Adtranz / Bombardier','diesel',3,200,100,3,null,0,2.4,.9,1999,30,1.3,'The default British diesel unit of the 2000s.'],
+ ['195','Civity','CAF','diesel',3,200,100,3.5,7.5,150,null,.93,2018,28,1.3,'Modern diesel with plugs at every seat.'],
+ ['220','Voyager','Bombardier','diesel',4,200,125,3,null,0,3.5,.9,2001,42,1.15,'Fast, cramped, and loud under the floor.'],
+ ['43','HST Intercity 125','BREL','diesel',9,480,125,3.5,null,0,4,.8,1977,60,1.1,'Fifty years old and still the best ride on the network.'],
+ ['91','InterCity 225','BREL / GEC','ac',10,535,125,3.5,null,0,5,.84,1989,50,1.1,'Built for 140 mph. Allowed 125.'],
+ ['331','Civity EMU','CAF','ac',3,200,100,3.5,7,150,null,.93,2019,20,1.6,'Bright electric commuter unit for the North.'],
+ ['345','Aventra','Bombardier','ac',9,450,90,3,14,240,null,.92,2017,36,2.2,'Elizabeth line metal. Built to swallow crowds.'],
+ ['357','Electrostar','Adtranz','ac',4,282,100,3,null,0,2.5,.9,2000,22,1.5,'Essex commuter stalwart.'],
+ ['377','Electrostar','Bombardier','dc',4,240,100,3,null,0,2.6,.9,2003,22,1.5,'Roughly half of the Southern network.'],
+ ['380','Desiro','Siemens','ac',4,265,100,3,null,0,3,.91,2010,22,1.5,"Strathclyde's quiet achiever."],
+ ['385','AT200','Hitachi','ac',4,273,100,3.5,9,200,null,.93,2018,22,1.5,'Central Belt electric. Smooth and sensible.'],
+ ['387','Electrostar','Bombardier','dual',4,223,110,3,null,0,4,.91,2015,24,1.4,'Gatwick Express regular. Big luggage racks.'],
+ ['390','Pendolino','Alstom','ac',11,589,125,4,null,0,12,.9,2002,55,1.1,'Tilts round corners. Your coffee will not.'],
+ ['397','Nova 2','CAF','ac',5,286,125,4,13,240,null,.92,2019,34,1.1,'125 mph over Shap with a quiet interior.'],
+ ['444','Desiro','Siemens','dc',5,299,100,4,null,0,4.5,.93,2004,30,1.2,'Proper intercity seats on a commuter budget.'],
+ ['450','Desiro','Siemens','dc',4,264,100,3,null,0,3.6,.93,2003,24,1.5,'Commuter Desiro. Gets on with it.'],
+ ['455','BREL 455','BREL','dc',4,316,75,1.5,null,0,0.8,.82,1982,26,1.6,'Early-80s suburban stock. Tired, but it carries a crowd.'],
+ ['484','D-Train','Vivarail','dc',2,82,60,3,null,0,1.2,.8,2021,10,1.6,'Rebuilt 1978 District line stock. Its builder has since gone bust.'],
+ ['700','Desiro City','Siemens','dual',12,666,100,3,18,270,null,.92,2016,44,1.7,'Twelve cars of Thameslink. Seats are a firm suggestion.'],
+ ['701','Arterio','Alstom','dc',10,556,100,3.5,12,300,null,.88,2022,36,1.6,'Ordered in 2017, in service in 2024. You do the maths.'],
+ ['720','Aventra','Alstom','ac',5,544,100,3,10,220,null,.9,2019,28,1.6,'Long, bright and very Essex.'],
+ ['745','FLIRT','Stadler','ac',12,757,100,4,18,240,null,.94,2019,42,1.2,'Swiss-built and almost suspiciously reliable.'],
+ ['755','FLIRT bi-mode','Stadler','bimode',4,229,100,3.5,8,200,null,.94,2019,26,1.3,'Swiss-built, comfy, and very hard to break.'],
+ ['777','Stadler 777','Stadler','dc',4,182,75,3.5,8,220,null,.94,2020,18,2.6,'Level boarding, lots of standing room, lots of yellow.'],
+ ['800','IET','Hitachi','bimode',5,302,125,3,15,240,null,.92,2017,46,1.15,'Hitachi intercity. Famous for its "ironing board" seats.'],
+ ['805','Evero','Hitachi','bimode',5,301,125,4,16,300,null,.9,2025,46,1.15,'Built for the North Wales coast.'],
+ ['807','Evero','Hitachi','ac',7,453,125,4,18,300,null,.9,2025,48,1.15,'West Coast express with a quiet ride.'],
+ ['810','Aurora','Hitachi','bimode',5,300,125,4,16,260,null,.9,2025,46,1.15,'Midland express with better seats than an 800.'],
+].forEach(a=>{C[a[0]]={id:a[0],name:a[1],builder:a[2],trac:a[3],cars:a[4],seats:a[5],mph:a[6],comfort:a[7],newPrice:a[8],deliv:a[9],usedPrice:a[10],rel:a[11],year:a[12],cost:a[13]*.55,stand:a[14],blurb:a[15]}});
+
+const vis=c=>c.filter(x=>x[0]!=='~'), geo=(from,c,to)=>[from,...c.map(x=>x.replace(/^~/,'')).filter(x=>x!=='Non-stop'),to];
+function R(fc,from,tc,to,mi,mph,elec,kind,load,calls,extra){return Object.assign({id:fc+'-'+tc,fc,from,tc,to,mi,mph,elec,kind,load,calls:vis(calls),geo:geo(from,calls,to)},extra||{})}
+function X(fc,from,tc,to,mi,mph,elec,kind,demand,cost,calls,extra){return Object.assign({id:fc+'-'+tc,fc,from,tc,to,mi,mph,elec,kind,demand,cost,calls:vis(calls),geo:geo(from,calls,to),locked:true},extra||{})}
+
+const OPS = {
+ swr:{id:'swr',short:'SWR',name:'South Western Railway',hub:'London Waterloo',plats:24,region:'London to Hampshire, Dorset, Devon and the Isle of Wight',diff:'Medium',cash:30,target:88,ok:0.1,accent:'#3b82c4',
+  blurb:'Britain\'s busiest terminus and a fleet that ranges from 1980s slam-and-pray to brand-new Arterios.',
+  festival:{m:5,d:17,route:'RYP-SHN',mult:2.6,days:4,name:'Isle of Wight Festival'},
+  routes:[
+   R('WAT','London Waterloo','PMH','Portsmouth Harbour',74,90,'dc','commuter',1.25,['Woking','Guildford','Godalming','Haslemere','Liphook','Liss','Petersfield','Rowlands Castle','Havant','Bedhampton','Hilsea','Fratton','Portsmouth & Southsea']),
+   R('WAT','London Waterloo','WEY','Weymouth',143,100,'dc','intercity',1.05,['Clapham Junction','Woking','Basingstoke','Winchester','Southampton Airport Parkway','Southampton Central','Brockenhurst','Bournemouth','Poole','Wareham','Dorchester South']),
+   R('WAT','London Waterloo','EXD','Exeter St Davids',172,90,'none','intercity',1.1,['Clapham Junction','Woking','Basingstoke','Andover','Salisbury','Gillingham','Sherborne','Yeovil Junction','Crewkerne','Axminster','Honiton']),
+   R('WAT','London Waterloo','RDG','Reading',43,75,'dc','commuter',0.95,['Clapham Junction','Richmond','Twickenham','Feltham','Staines','Ascot','Bracknell','Wokingham']),
+   R('WAT','London Waterloo','WNR','Windsor & Eton Riverside',25,70,'dc','commuter',1.15,['Vauxhall','Clapham Junction','Putney','Richmond','Twickenham','Feltham','Staines','Datchet']),
+   R('RYP','Ryde Pier Head','SHN','Shanklin',9,45,'dc','leisure',0.9,['Ryde Esplanade','Ryde St Johns Road','Smallbrook Junction','Brading','Sandown','Lake']),
+  ],
+  exp:[
+   X('PMH','Portsmouth Harbour','SOU','Southampton Central',26,75,'dc','regional',5200,6,['Fratton','Hilsea','Cosham','Portchester','Fareham','Swanwick','Netley','Woolston','St Denys']),
+   X('WAT','London Waterloo','AON','Alton',48,85,'dc','commuter',6500,8,['Clapham Junction','Woking','Brookwood','Ash Vale','Aldershot','Farnham','Bentley']),
+  ],
+  fleet:[['WAT-PMH','444',3],['WAT-WEY','444',4],['WAT-EXD','159',3],['WAT-RDG','450',3],['WAT-WNR','455',3],['RYP-SHN','484',2]]},
+ southern:{id:'southern',short:'SN',name:'Southern',hub:'London Victoria',plats:19,region:'London to Brighton, the Sussex coast and Hampshire',diff:'Medium',cash:28,target:87,ok:0.1,accent:'#4a9c5d',
+  blurb:'Brighton commuters, Gatwick Express and the West Coastway through Emsworth and Havant.',
+  festival:{m:6,d:9,route:'BTN-PMH',mult:1.6,days:4,name:'Goodwood Festival of Speed'},
+  routes:[
+   R('VIC','London Victoria','BTN','Brighton',51,100,'dc','commuter',1.15,['Clapham Junction','East Croydon','Gatwick Airport','Three Bridges','Haywards Heath','Burgess Hill','Hassocks']),
+   R('BTN','Brighton','PMH','Portsmouth Harbour',49,75,'dc','regional',1.0,['Hove','Shoreham-by-Sea','Worthing','Goring-by-Sea','Angmering','Barnham','Chichester','Bosham','Southbourne','Emsworth','Havant','Fratton']),
+   R('VIC','London Victoria','BOG','Bognor Regis',66,90,'dc','commuter',1.05,['Clapham Junction','East Croydon','Gatwick Airport','Horsham','Christs Hospital','Billingshurst','Pulborough','Amberley','Arundel','Barnham']),
+   R('LBG','London Bridge','UCK','Uckfield',46,70,'none','commuter',1.2,['East Croydon','Oxted','Hurst Green','Edenbridge Town','Hever','Cowden','Ashurst','Eridge','Crowborough','Buxted']),
+   R('BTN','Brighton','AFK','Ashford International',66,75,'none','regional',0.9,['Lewes','Eastbourne','Bexhill','Hastings','Ore','Three Oaks','Winchelsea','Rye','Appledore']),
+   R('VIC','London Victoria','GTW','Gatwick Airport',27,100,'dc','intercity',1.0,['Non-stop'],{fareBoost:1.7,label:'Gatwick Express'}),
+  ],
+  exp:[
+   X('VIC','London Victoria','EBN','Eastbourne',66,90,'dc','commuter',7000,9,['Clapham Junction','East Croydon','Gatwick Airport','Haywards Heath','Plumpton','Lewes','Polegate']),
+  ],
+  fleet:[['VIC-BTN','377',5],['BTN-PMH','377',2],['VIC-BOG','377',2],['LBG-UCK','170',2],['BTN-AFK','170',1],['VIC-GTW','387',3]]},
+ gwr:{id:'gwr',short:'GWR',name:'Great Western Railway',hub:'London Paddington',plats:14,region:'London to Bristol, South Wales, Devon and Cornwall',diff:'Medium',cash:32,target:87,ok:0.1,accent:'#2f7d6d',
+  blurb:'Fast intercity on the Great Western main line, plus the long haul to Penzance.',
+  festival:{m:5,d:23,route:'PAD-PNZ',mult:1.4,days:5,name:'Glastonbury (via Castle Cary)'},
+  routes:[
+   R('PAD','London Paddington','BRI','Bristol Temple Meads',118,125,'ac','intercity',1.1,['Reading','Didcot Parkway','Swindon','Chippenham','Bath Spa']),
+   R('PAD','London Paddington','CDF','Cardiff Central',145,125,'ac','intercity',1.0,['Reading','Didcot Parkway','Swindon','Bristol Parkway','Newport']),
+   R('PAD','London Paddington','PNZ','Penzance',305,100,'none','intercity',1.05,['Reading','~Newbury','~Westbury','Castle Cary','Taunton','Exeter St Davids','Newton Abbot','Plymouth','Liskeard','Bodmin Parkway','St Austell','Truro','Redruth','Camborne','St Erth']),
+   R('PAD','London Paddington','OXF','Oxford',63,100,'none','commuter',1.15,['Slough','Maidenhead','Twyford','Reading','Didcot Parkway','Culham','Radley']),
+   R('RDG','Reading','GTW','Gatwick Airport',70,75,'none','regional',0.95,['Wokingham','Crowthorne','Sandhurst','Guildford','Dorking Deepdene','Reigate','Redhill']),
+   R('CDF','Cardiff Central','PMH','Portsmouth Harbour',140,90,'none','regional',1.05,['Newport','Bristol Temple Meads','Bath Spa','Bradford-on-Avon','Westbury','Salisbury','Romsey','Southampton Central','Fareham','Cosham','Fratton']),
+  ],
+  exp:[
+   X('EXD','Exeter St Davids','OKE','Okehampton',26,60,'none','leisure',1400,4,['Exeter Central','Newton St Cyres','Crediton']),
+   X('PAD','London Paddington','WOS','Worcester Shrub Hill',120,90,'none','intercity',4000,10,['Reading','Oxford','Charlbury','Kingham','Moreton-in-Marsh','Evesham']),
+  ],
+  fleet:[['PAD-BRI','800',3],['PAD-CDF','800',3],['PAD-PNZ','800',2],['PAD-PNZ','43',1],['PAD-OXF','165',3],['RDG-GTW','165',2],['CDF-PMH','158',3]]},
+ lner:{id:'lner',short:'LNER',name:'London North Eastern Railway',hub:"London King's Cross",plats:12,region:'The East Coast Main Line to Yorkshire, the North East and Scotland',diff:'Medium',cash:35,target:86,ok:0.1,accent:'#c23b4a',
+  blurb:'Long-distance flagship. Big fares, big distances, and InterCity 225s that are getting on a bit.',
+  festival:{m:7,d:1,route:'KGX-EDB',mult:1.3,days:24,name:'Edinburgh Festival Fringe'},
+  routes:[
+   R('KGX',"London King's Cross",'EDB','Edinburgh',393,125,'ac','intercity',1.1,['Peterborough','~Grantham','~Newark North Gate','~Doncaster','York','Darlington','Newcastle','Alnmouth','Berwick-upon-Tweed']),
+   R('KGX',"London King's Cross",'LDS','Leeds',186,125,'ac','intercity',1.1,['Stevenage','Peterborough','Grantham','Newark North Gate','Doncaster','Wakefield Westgate']),
+   R('KGX',"London King's Cross",'NCL','Newcastle',268,125,'ac','intercity',1.0,['Peterborough','~Grantham','~Newark North Gate','Doncaster','York','Northallerton','Darlington','Durham']),
+   R('KGX',"London King's Cross",'ABD','Aberdeen',523,100,'none','intercity',1.0,['~Peterborough','~Doncaster','York','~Darlington','Newcastle','~Berwick-upon-Tweed','Edinburgh','Kirkcaldy','Leuchars','Dundee','Arbroath','Montrose','Stonehaven']),
+   R('KGX',"London King's Cross",'LCN','Lincoln',138,100,'none','intercity',0.95,['Stevenage','Peterborough','Newark North Gate']),
+   R('KGX',"London King's Cross",'HGT','Harrogate',201,90,'none','intercity',0.9,['Peterborough','~Grantham','~Newark North Gate','Doncaster','Wakefield Westgate','Leeds','Horsforth']),
+  ],
+  exp:[
+   X('KGX',"London King's Cross",'HUL','Hull',205,100,'none','intercity',2500,9,['~Stevenage','~Peterborough','Grantham','Newark North Gate','Retford','Doncaster','Selby','Brough']),
+   X('KGX',"London King's Cross",'BDQ','Bradford Forster Square',200,110,'ac','intercity',2000,8,['Peterborough','~Grantham','~Newark North Gate','Doncaster','Wakefield Westgate','Leeds','Shipley']),
+  ],
+  fleet:[['KGX-EDB','800',4],['KGX-EDB','91',1],['KGX-LDS','800',2],['KGX-LDS','91',2],['KGX-NCL','91',2],['KGX-ABD','800',1],['KGX-LCN','800',1],['KGX-HGT','800',1]]},
+ avanti:{id:'avanti',short:'AWC',name:'Avanti West Coast',hub:'London Euston',plats:18,region:'The West Coast Main Line to Manchester, Liverpool, Glasgow and North Wales',diff:'Hard',cash:34,target:86,ok:0.07,accent:'#2a8a8a',
+  blurb:'Pendolinos, high expectations and a timetable everyone has an opinion about.',
+  festival:{m:3,d:9,route:'EUS-LIV',mult:1.5,days:3,name:'Grand National at Aintree'},
+  routes:[
+   R('EUS','London Euston','MAN','Manchester Piccadilly',184,125,'ac','intercity',1.15,['Milton Keynes Central','~Rugby','~Nuneaton','~Lichfield Trent Valley','Stoke-on-Trent','Macclesfield','Stockport']),
+   R('EUS','London Euston','BHM','Birmingham New Street',113,110,'ac','intercity',1.05,['Milton Keynes Central','Rugby','Coventry','Birmingham International']),
+   R('EUS','London Euston','GLC','Glasgow Central',401,125,'ac','intercity',1.0,['~Milton Keynes Central','~Rugby','~Nuneaton','~Stafford','~Crewe','Warrington Bank Quay','Wigan North Western','Preston','Lancaster','Oxenholme','Penrith','Carlisle','~Lockerbie','~Motherwell']),
+   R('EUS','London Euston','LIV','Liverpool Lime Street',193,125,'ac','intercity',1.05,['Milton Keynes Central','~Rugby','~Nuneaton','Stafford','Crewe','Runcorn']),
+   R('EUS','London Euston','HHD','Holyhead',263,90,'none','intercity',1.05,['~Milton Keynes Central','~Rugby','~Nuneaton','~Stafford','Crewe','Chester','Flint','Prestatyn','Rhyl','Colwyn Bay','Llandudno Junction','Bangor']),
+   R('EUS','London Euston','BPN','Blackpool North',227,110,'ac','intercity',0.9,['Milton Keynes Central','~Rugby','~Nuneaton','~Stafford','Crewe','Warrington Bank Quay','Wigan North Western','Preston','Poulton-le-Fylde']),
+  ],
+  exp:[
+   X('EUS','London Euston','SHR','Shrewsbury',163,100,'none','intercity',2200,9,['~Milton Keynes Central','~Rugby','Coventry','Birmingham New Street','Sandwell & Dudley','Wolverhampton','Telford Central']),
+   X('EUS','London Euston','EDB','Edinburgh',399,125,'ac','intercity',3500,12,['~Milton Keynes Central','~Rugby','~Nuneaton','~Stafford','~Crewe','~Warrington Bank Quay','~Wigan North Western','Preston','Lancaster','Oxenholme','Penrith','Carlisle','Lockerbie','Haymarket']),
+  ],
+  fleet:[['EUS-MAN','390',4],['EUS-BHM','390',3],['EUS-GLC','390',2],['EUS-LIV','390',2],['EUS-HHD','220',2],['EUS-BPN','390',1]]},
+ northern:{id:'northern',short:'NT',name:'Northern',hub:'Leeds',plats:17,region:'Commuter and rural lines across the North of England',diff:'Hard',cash:22,target:85,ok:0.04,accent:'#3a5cc7',
+  blurb:'Cheap fares, scenic lines, ancient diesels and two Pacers you were hoping nobody would mention.',
+  festival:{m:6,d:5,route:'LDS-CAR',mult:1.5,days:10,name:'Settle–Carlisle summer walkers'},
+  routes:[
+   R('MCV','Manchester Victoria','LDS','Leeds',52,75,'none','regional',1.15,['Rochdale','Littleborough','Todmorden','Hebden Bridge','Mytholmroyd','Sowerby Bridge','Halifax','Bradford Interchange']),
+   R('LDS','Leeds','CAR','Carlisle',113,60,'none','leisure',0.95,['Shipley','Keighley','Skipton','Hellifield','Settle','Horton-in-Ribblesdale','Ribblehead','Dent','Garsdale','Kirkby Stephen','Appleby','Langwathby']),
+   R('LIV','Liverpool Lime Street','MIA','Manchester Airport',40,75,'ac','regional',1.2,['Edge Hill','Lea Green','St Helens Junction','Newton-le-Willows','Manchester Oxford Road','Manchester Piccadilly']),
+   R('LDS','Leeds','ILK','Ilkley',16,65,'ac','commuter',1.1,['Kirkstall Forge','Guiseley','Menston','Burley-in-Wharfedale','Ben Rhydding']),
+   R('NCL','Newcastle','CAR','Carlisle',61,65,'none','regional',1.0,['MetroCentre','Prudhoe','Hexham','Haydon Bridge','Haltwhistle','Brampton']),
+   R('SHF','Sheffield','HUL','Hull',58,75,'none','regional',1.1,['Meadowhall','Rotherham Central','Doncaster','Thorne North','Goole','Gilberdyke','Brough']),
+  ],
+  exp:[
+   X('MBR','Middlesbrough','WTB','Whitby',35,40,'none','leisure',900,3,['Nunthorpe','Battersby','Kildale','Castleton Moor','Danby','Glaisdale','Egton','Grosmont','Sleights','Ruswarp']),
+   X('LDS','Leeds','YRK','York',25,75,'none','commuter',7000,6,['Cross Gates','Garforth','East Garforth','Micklefield','Church Fenton','Ulleskelf']),
+  ],
+  fleet:[['MCV-LDS','195',3],['MCV-LDS','158',1],['LDS-CAR','158',2],['LIV-MIA','331',3],['LDS-ILK','331',2],['NCL-CAR','156',2],['SHF-HUL','150',1],['SHF-HUL','142',2]]},
+ scotrail:{id:'scotrail',short:'SR',name:'ScotRail',hub:'Glasgow Queen Street',plats:7,region:'Scotland, from the Central Belt to the West Highlands',diff:'Medium',cash:28,target:89,ok:0.09,accent:'#3d6fb8',
+  blurb:'Edinburgh–Glasgow shuttles, short-formed HSTs to Aberdeen, and the most beautiful line in the country.',
+  festival:{m:7,d:1,route:'GLQ-EDB',mult:1.3,days:24,name:'Edinburgh Festival Fringe'},
+  routes:[
+   R('GLQ','Glasgow Queen Street','EDB','Edinburgh',47,90,'ac','commuter',1.15,['Croy','Falkirk High','Polmont','Linlithgow','Haymarket']),
+   R('GLQ','Glasgow Queen Street','ABD','Aberdeen',152,100,'none','intercity',1.0,['Stirling','Perth','Dundee','Arbroath','Montrose','Stonehaven']),
+   R('EDB','Edinburgh','INV','Inverness',175,75,'none','intercity',1.0,['Haymarket','Kirkcaldy','Perth','Dunkeld & Birnam','Pitlochry','Blair Atholl','Kingussie','Aviemore','Carrbridge']),
+   R('GLQ','Glasgow Queen Street','MLG','Mallaig',164,50,'none','leisure',0.95,['Dalmuir','Dumbarton Central','Helensburgh Upper','Garelochhead','Arrochar & Tarbet','Ardlui','Crianlarich','Tyndrum Upper','Bridge of Orchy','Rannoch','Corrour','Roy Bridge','Fort William','Glenfinnan','Arisaig','Morar']),
+   R('GLC','Glasgow Central','AYR','Ayr',41,90,'ac','commuter',1.05,['Paisley Gilmour Street','Johnstone','Lochwinnoch','Glengarnock','Kilwinning','Irvine','Barassie','Troon','Prestwick International Airport','Prestwick Town','Newton-on-Ayr']),
+   R('EDB','Edinburgh','NBW','North Berwick',22,75,'ac','commuter',1.1,['Musselburgh','Wallyford','Prestonpans','Longniddry','Drem']),
+  ],
+  exp:[
+   X('EDB','Edinburgh','TWB','Tweedbank',35,60,'none','commuter',4200,6,['Brunstane','Newcraighall','Shawfair','Eskbank','Newtongrange','Gorebridge','Stow','Galashiels']),
+   X('INV','Inverness','KYL','Kyle of Lochalsh',82,50,'none','leisure',700,4,['Beauly','Muir of Ord','Dingwall','Garve','Achnasheen','Strathcarron','Plockton']),
+  ],
+  fleet:[['GLQ-EDB','385',5],['GLQ-ABD','43',3],['EDB-INV','170',2],['EDB-INV','43',1],['GLQ-MLG','156',2],['GLC-AYR','380',3],['EDB-NBW','380',1]]},
+ merseyrail:{id:'merseyrail',short:'ME',name:'Merseyrail',hub:'Liverpool Central',plats:3,region:'Third-rail commuter network around Liverpool and the Wirral',diff:'Easy',cash:20,target:92,ok:0.16,accent:'#d9a419',
+  blurb:'Short hops, a brand-new Stadler fleet and the best punctuality in the country. Keep it that way.',
+  festival:{m:3,d:9,route:'LVC-OMS',mult:2.2,days:3,name:'Grand National at Aintree'},
+  routes:[
+   R('LVC','Liverpool Central','SOP','Southport',19,65,'dc','commuter',1.1,['Moorfields','Sandhills','Bootle New Strand','Waterloo (Merseyside)','Blundellsands & Crosby','Hightown','Formby','Freshfield','Ainsdale','Birkdale']),
+   R('LVC','Liverpool Central','CTR','Chester',18,75,'dc','commuter',1.05,['James Street','Hamilton Square','Birkenhead Central','Rock Ferry','Bebington','Hooton','Capenhurst','Bache']),
+   R('LVC','Liverpool Central','OMS','Ormskirk',13,65,'dc','commuter',1.0,['Moorfields','Sandhills','Kirkdale','Walton','Orrell Park','Aintree','Old Roan','Maghull','Maghull North','Town Green','Aughton Park']),
+   R('LVC','Liverpool Central','KIR','Kirkby',7,60,'dc','commuter',0.95,['Moorfields','Sandhills','Kirkdale','Rice Lane','Fazakerley']),
+   R('LVC','Liverpool Central','WKI','West Kirby',12,65,'dc','commuter',1.0,['James Street','Hamilton Square','Birkenhead Park','Birkenhead North','Bidston','Leasowe','Moreton','Meols','Manor Road','Hoylake']),
+   R('LVC','Liverpool Central','NBN','New Brighton',8,60,'dc','commuter',0.95,['James Street','Hamilton Square','Birkenhead Park','Birkenhead North','Wallasey Village','Wallasey Grove Road']),
+  ],
+  exp:[
+   X('LVC','Liverpool Central','HBL','Headbolt Lane',9,60,'dc','commuter',2500,4,['Moorfields','Sandhills','Kirkdale','Rice Lane','Fazakerley','Kirkby']),
+   X('LVC','Liverpool Central','WRX','Wrexham General',33,60,'none','regional',2000,6,['James Street','Birkenhead North','Bidston','Upton','Heswall','Neston','Shotton','Buckley','Hope','Gwersyllt']),
+  ],
+  fleet:[['LVC-SOP','777',4],['LVC-CTR','777',3],['LVC-OMS','777',2],['LVC-KIR','777',1],['LVC-WKI','777',2],['LVC-NBN','777',1]]},
+};
+
+const ACH = [
+ ['first_used','Pre-loved','Buy a second-hand unit from a leasing company.'],
+ ['first_new','Fresh off the line','Take delivery of a brand-new train.'],
+ ['expand','New horizons','Open a new route.'],
+ ['ppm95','Right time railway','Finish a period with PPM of 95% or better.'],
+ ['sat85','Five-star feedback','Reach 85% passenger satisfaction.'],
+ ['new5','Factory fresh','Take delivery of five brand-new trains.'],
+ ['no_pacer','Pacer-free','Get rid of every Pacer you own.'],
+ ['fleet40','Big fleet','Own 40 units.'],
+ ['cash100','Nine figures','Have £100m in the bank.'],
+ ['year1','Survived a year','Complete all 13 rail periods of a year.'],
+ ['stretch','Stretch it','Run a train longer than it left the factory.'],
+];
+
+/* ===================== SIM ===================== */
+const DAY_MS = 5000, OP_HOURS = 18, START = Date.UTC(2027,3,1);
+const SEASON = [.92,.95,1,1.02,1.03,1.04,1.06,1.08,1,1,.98,.95];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rint=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+const dateOf=day=>new Date(START+day*864e5);
+
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return Date.UTC(y,mo-1,da)}
+function isBankHol(d){
+  const y=d.getUTCFullYear(),m=d.getUTCMonth(),dt=d.getUTCDate(),dow=d.getUTCDay(),t=d.getTime();
+  if(m===0&&dt===1)return true;
+  const e=easter(y); if(t===e-2*864e5||t===e+864e5)return true;
+  if(dow===1){ if(m===4&&dt<=7)return true; if((m===4||m===7)&&dt+7>31)return true; }
+  return false;
+}
+function dowMult(kind,dow){
+  if(kind==='commuter') return dow===6?.78:dow===0?.62:1;
+  if(kind==='leisure') return dow===6?1.25:dow===0?1.12:.92;
+  if(kind==='intercity') return dow===5?1.12:dow===6?.88:dow===0?1.0:1;
+  return dow===6?.88:dow===0?.75:1;
+}
+function baseFare(r){
+  const f = r.kind==='intercity'?5+.2*r.mi : r.kind==='leisure'?3+.2*r.mi : r.kind==='regional'?2+.14*r.mi : 2+.16*r.mi;
+  return f*(r.fareBoost||1);
+}
+
+function tripH(c,r){return r.mi/(Math.min(c.mph,r.mph)*.62)+.4}
+function tripsPerDay(c,r){return clamp(Math.floor(OP_HOURS/tripH(c,r)),1,36)}
+const carsN=u=>u.cars||C[u.cls].cars;
+const seatsOf=u=>Math.round(C[u.cls].seats*carsN(u)/C[u.cls].cars);
+const unitName=u=>u.cls+' '+String(u.n).padStart(3,'0');
+const ageOf=(s,u)=>Math.max(0,dateOf(s.day).getUTCFullYear()-u.built);
+const routeOf=(s,id)=>s.routes.find(r=>r.id===id);
+
+function addUnit(s,cls,o){
+  const c=C[cls]; s.nums[cls]=(s.nums[cls]||0)+1;
+  const n = c.id==='43'? 2*s.nums[cls] : c.id==='91'? 100+s.nums[cls] : s.nums[cls];
+  const built=o.built??c.year;
+  const age=Math.max(0,2027+Math.floor(s.day/364)-built);
+  const rel=o.fresh? c.rel : clamp(c.rel-age*.0022+rnd(-.02,.01),.68,.97);
+  const u={id:'u'+(s.uid++),cls,n,built,rel,cb:0,route:o.route||null,st:o.st||(o.route?'active':'depot'),days:o.days||0,miles:0};
+  s.units.push(u); if(cls==='142')s.flags.hadPacer=true; return u;
+}
+function routeUnits(s,r,all){return s.units.filter(u=>u.route===r.id&&(all?u.st!=='order':u.st==='active'))}
+
+function newGame(opId){
+  const op=OPS[opId];
+  const s={v:1,op:opId,day:0,cash:op.cash*1e6,units:[],routes:[],mods:[],news:[],strikes:0,periods:0,ach:{},flags:{},nums:{},uid:1,hist:[],last:null,over:null,cd:{},reports:[],period:freshPeriod(),best:{cash:op.cash*1e6,ppm:0}};
+  op.routes.forEach(rd=>s.routes.push(Object.assign({},rd,{calls:rd.calls.slice(),open:true,fare:1,sat:70,ppm:92,t:null})));
+  op.exp.forEach(rd=>s.routes.push(Object.assign({},rd,{calls:rd.calls.slice(),open:false,fare:1,sat:70,ppm:92,t:null})));
+  op.fleet.forEach(([rid,cls,n])=>{for(let i=0;i<n;i++)addUnit(s,cls,{route:rid,built:C[cls].year+rint(0,3)})});
+  let est=0,run=0;
+  s.routes.forEach(r=>{
+    if(r.locked)return;
+    let seats=0,cap=0; routeUnits(s,r).forEach(u=>{const c=C[u.cls],t=tripsPerDay(c,r);seats+=t*c.seats;cap+=t*c.seats*c.stand;run+=t*r.mi*c.cost+c.cars*700});
+    r.demand=Math.round(seats*r.load/100)*100;
+    est+=Math.min(r.demand,cap)*baseFare(r);
+  });
+  s.overhead=Math.round(Math.max(est*.2,est*(1-op.ok)-run)/1000)*1000;
+  news(s,`You've taken over ${op.name}. The DfT expects ${op.target}% PPM.`,'');
+  return s;
+}
+function freshPeriod(){return {rev:0,cost:0,ppm:0,sat:0,n:0,pax:0,repay:0}}
+function news(s,text,tone){s.news.unshift({day:s.day,text,tone:tone||''});if(s.news.length>40)s.news.length=40}
+function addMod(s,m){s.mods.push(m)}
+function modMul(s,kind,r){let v=1;for(const m of s.mods)if(m.kind===kind&&hit(m,r))v*=m.v;return v}
+function modSum(s,kind,r){let v=0;for(const m of s.mods)if(m.kind===kind&&hit(m,r))v+=m.v;return v}
+function hit(m,r){return m.route==='*'||m.route===r.id}
+function dayRev(s){const h=s.hist.slice(-7);return h.length?Math.max(1.5e5,h.reduce((a,b)=>a+b.rev,0)/h.length):3e5}
+
+let EMIT = { modal(){}, toast(){} }; // UI hooks
+
+function simDay(s){
+  const d=dateOf(s.day),m=d.getUTCMonth(),dt=d.getUTCDate(),dow=d.getUTCDay();
+  const op=OPS[s.op],yrs=s.day/364;
+  // carriage orders
+  if(s.carOrders&&s.carOrders.length){s.pool=s.pool||{};for(const o of s.carOrders){if(--o.days<=0){s.pool[o.cls]=(s.pool[o.cls]||0)+1;news(s,`New Class ${o.cls} carriage delivered to the siding. Couple it up in the yard.`,'good')}}s.carOrders=s.carOrders.filter(o=>o.days>0)}
+  // deliveries and repairs
+  for(const u of s.units){
+    if(u.st==='order'){ if(--u.days<=0){u.st=u.route?'active':'depot';news(s,`New ${C[u.cls].builder.split(' /')[0]} unit ${unitName(u)} delivered${u.route?' and in service':' to the depot'}.`,'good');unlock(s,'first_new');s.flags.newCount=(s.flags.newCount||0)+1;if(s.flags.newCount>=5)unlock(s,'new5')} }
+    else if(u.st==='repair'||u.st==='refurb'){ if(--u.days<=0){ if(u.st==='refurb')news(s,`${unitName(u)} is back from refurbishment, smelling of new carpet.`,'good'); u.st=u.route?'active':'depot'; } }
+  }
+  seasonal(s,d);
+  if(!s.over&&chance(.1))randomEvent(s,d);
+
+  const xmas=m===11&&dt===25, boxing=m===11&&dt===26, bh=isBankHol(d);
+  let rev=0,cost=0,pax=0,pw=0,ps=0,sw=0,ss=0;
+  for(const r of s.routes){
+    if(!r.open)continue;
+    const act=routeUnits(s,r);
+    let seatCap=0,cap=0,cw=0,relS=0,rc=0;
+    for(const u of act){const c=C[u.cls],t=tripsPerDay(c,r),se=seatsOf(u);seatCap+=t*se;cap+=t*se*c.stand;cw+=(c.comfort+u.cb)*t*se;relS+=u.rel;
+      if(!xmas){const mi=t*r.mi;u.miles+=mi;rc+=mi*c.cost*(.35+.65*carsN(u)/c.cars)}}
+    for(const u of routeUnits(s,r,true))rc+=carsN(u)*700;
+    const comfort=seatCap?cw/seatCap:0;
+    let dem=r.demand*(1+.02*yrs)*SEASON[m]*dowMult(r.kind,dow)*Math.pow(r.fare,-1.15)*(.7+.6*r.sat/100)*(.8+.3*Math.min(1,seatCap/r.demand))*modMul(s,'demand',r);
+    if(bh)dem*=r.kind==='commuter'?.55:r.kind==='leisure'?1.4:1.05;
+    if(boxing)dem*=.3;
+    if(xmas)dem=0;
+    const carried=Math.min(dem,cap), load=seatCap?dem/seatCap:0;
+    const rr=carried*baseFare(r)*r.fare*modMul(s,'revenue',r);
+    let fails=0;
+    if(!xmas)for(const u of act){
+      if(chance((1-u.rel)*.045)){u.st='repair';u.days=rint(2,6);fails++;rc+=rint(60,220)*1000;
+        news(s,pick([`${unitName(u)} failed near ${pick(r.calls)}. Passengers decanted.`,`Door fault on ${unitName(u)} at ${pick(r.calls)}.`,`${unitName(u)} broke down near ${pick(r.calls)}.`,`${unitName(u)} taken out of service at ${pick(r.calls)} with a brake fault.`]),'bad')}
+      u.rel=Math.max(.55,u.rel-.00006);
+    }
+    let ppm;
+    if(!act.length)ppm=0;
+    else if(xmas)ppm=r.ppm;
+    else ppm=clamp(97-(1-relS/act.length)*40-Math.max(0,load-1)*15-Math.min(35,fails*25/act.length)+modSum(s,'ppm',r)+rnd(-2,1.2),25,99.6);
+    const target=!act.length?5:15+.5*ppm+5*comfort-Math.max(0,load-.95)*90-Math.max(0,r.fare-1)*45+Math.max(0,1-r.fare)*20+modSum(s,'sat',r);
+    if(!xmas)r.sat+=(clamp(target,0,100)-r.sat)*.06;
+    r.ppm=ppm;
+    r.t={dem,carried,seatCap,cap,load,ppm,rev:rr,cost:rc,units:act.length,comfort,fails};
+    rev+=rr;cost+=rc;pax+=carried;
+    const w=act.length?Math.max(carried,1):r.demand*.25; pw+=w; ps+=ppm*w;
+    const w2=Math.max(carried,r.demand*.1); sw+=w2; ss+=r.sat*w2;
+  }
+  for(const u of s.units)if(!u.route&&u.st!=='order')cost+=carsN(u)*700;
+  for(const k in (s.pool||{}))cost+=(s.pool[k]||0)*700;
+  cost+=s.overhead*(xmas?.4:1);
+  const dppm=pw?ps/pw:90, dsat=sw?ss/sw:60;
+  const repay=xmas?0:rev*Math.max(0,92-dppm)*.006; cost+=repay;
+  const profit=rev-cost; s.cash+=profit;
+  s.last={rev,cost,profit,pax,ppm:dppm,sat:dsat,repay};
+  s.hist.push({rev,profit,ppm:dppm}); if(s.hist.length>56)s.hist.shift();
+  const P=s.period; P.rev+=rev;P.cost+=cost;P.ppm+=dppm;P.sat+=dsat;P.n++;P.pax+=pax;P.repay+=repay;
+  for(const md of s.mods)md.days--; s.mods=s.mods.filter(md=>md.days>0);
+  s.day++;
+  if(dsat>=85)unlock(s,'sat85');
+  if(s.cash>=100e6)unlock(s,'cash100');
+  if(s.cash>s.best.cash)s.best.cash=s.cash;
+  if(s.day%28===0)periodEnd(s);
+  if(!s.over&&s.cash<-25e6){s.over='bust';EMIT.modal(gameOverModal(s))}
+}
+
+function periodEnd(s){
+  const P=s.period,op=OPS[s.op],ppm=P.ppm/P.n,sat=P.sat/P.n;
+  const pay=(ppm-op.target)*P.rev*.008; s.cash+=pay;
+  const bad=ppm<op.target-6||sat<50||s.cash<0, good=ppm>=op.target&&sat>=62;
+  const before=s.strikes;
+  if(bad)s.strikes++; else if(good&&s.strikes>0)s.strikes--;
+  s.periods++;
+  const pno=((s.periods-1)%13)+1, yr=2027+Math.floor((s.periods-1)/13);
+  const rep={pno,yr,ppm,sat,rev:P.rev,cost:P.cost,profit:P.rev-P.cost+pay,pay,pax:P.pax,repay:P.repay,bad,good,strikes:s.strikes,before,target:op.target};
+  s.reports.unshift(rep); if(s.reports.length>13)s.reports.length=13;
+  if(ppm>s.best.ppm)s.best.ppm=ppm;
+  if(ppm>=95)unlock(s,'ppm95');
+  if(s.periods>=13)unlock(s,'year1');
+  s.period=freshPeriod();
+  news(s,`Period ${pno} closed: PPM ${ppm.toFixed(1)}%, satisfaction ${Math.round(sat)}%.`,bad?'bad':good?'good':'');
+  if(s.strikes>=3){s.over='dft';EMIT.modal(gameOverModal(s))}
+  else EMIT.modal(reportModal(s,rep));
+}
+
+function unlock(s,id){if(s.ach[id])return;s.ach[id]=s.day+1;const a=ACH.find(x=>x[0]===id);news(s,`Goal complete: ${a[1]}.`,'good');EMIT.toast(`Goal complete: ${a[1]}`)}
+function checkAch(s){
+  if(s.units.filter(u=>u.st!=='order').length>=40)unlock(s,'fleet40');
+  if(s.flags.hadPacer&&!s.units.some(u=>u.cls==='142'))unlock(s,'no_pacer');
+}
+
+/* ---------- events ---------- */
+function spend(s,x){s.cash-=x}
+function openRoutes(s){return s.routes.filter(r=>r.open)}
+function busiest(s){return openRoutes(s).slice().sort((a,b)=>b.demand-a.demand)[0]}
+
+function seasonal(s,d){
+  const m=d.getUTCMonth(),dt=d.getUTCDate(),op=OPS[s.op];
+  const f=op.festival;
+  if(m===f.m&&dt===f.d){const r=routeOf(s,f.route); if(r&&r.open){addMod(s,{kind:'demand',route:r.id,v:f.mult,days:f.days});news(s,`${f.name}: demand on ${r.from} – ${r.to} is through the roof. Add capacity if you can.`,'')}}
+  if(m===9&&dt===1){
+    const c=dayRev(s)*1.1;
+    EMIT.modal({kicker:'Autumn',title:'Leaf-fall season starts today',body:`<p>Crushed leaves on the railhead turn into a Teflon-like paste. Trains slide, brake early and run late until the end of November.</p><p>Network Rail can run extra Railhead Treatment Trains on your routes, at your cost.</p>`,
+      choices:[{label:'Pay for extra treatment',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'ppm',route:'*',v:-1.5,days:61});news(s,'Extra Railhead Treatment Trains booked for autumn.','good')}},
+               {label:'Take our chances',sub:'Expect a hit to PPM',fn:()=>{addMod(s,{kind:'ppm',route:'*',v:-6,days:61});news(s,'Leaves on the line. Again.','bad')}}]});
+  }
+  if(m===11&&dt===25)news(s,'Christmas Day. No trains run anywhere in Britain. Merry Christmas.','');
+  if(m===11&&dt===27){const r=busiest(s);addMod(s,{kind:'demand',route:r.id,v:.75,days:5});addMod(s,{kind:'ppm',route:r.id,v:-5,days:5});news(s,`Christmas engineering works close part of ${r.from} – ${r.to}. Rail replacement buses deployed.`,'bad')}
+  if(isBankHol(d))news(s,'Bank holiday: commuters vanish, day-trippers appear.','');
+}
+
+const EVENTS=[
+ {id:'aslef',w:2,cd:100,run(s){const c=dayRev(s)*2.2;return{kicker:'Industrial relations',title:'ASLEF ballot drivers over pay',body:'<p>The drivers\' union says its members will walk out for two days unless you make a better offer.</p>',choices:[
+   {label:'Offer 4.5% more',sub:money(c),fn:()=>{spend(s,c);news(s,'Pay deal agreed with ASLEF. Drivers stay at work.','good')}},
+   {label:'Hold firm',sub:'About a two-in-three chance of a strike',fn:()=>{if(chance(.65)){addMod(s,{kind:'revenue',route:'*',v:.12,days:2});addMod(s,{kind:'ppm',route:'*',v:-45,days:2});addMod(s,{kind:'sat',route:'*',v:-25,days:4});news(s,'ASLEF strike: almost nothing runs for two days.','bad')}else news(s,'ASLEF suspend the strike while talks continue. Phew.','good')}}]}}},
+ {id:'rmt',w:2,cd:100,run(s){const c=dayRev(s)*1.4;return{kicker:'Industrial relations',title:'RMT dispute over guards',body:'<p>You floated driver-only operation in a meeting. Somebody leaked it. The RMT has announced a one-day strike.</p>',choices:[
+   {label:'Guarantee guards stay',sub:money(c)+' in staffing commitments',fn:()=>{spend(s,c);addMod(s,{kind:'sat',route:'*',v:3,days:20});news(s,'Guards guaranteed. Strike called off.','good')}},
+   {label:'Ride it out',sub:'One day of chaos',fn:()=>{addMod(s,{kind:'revenue',route:'*',v:.3,days:1});addMod(s,{kind:'ppm',route:'*',v:-30,days:1});addMod(s,{kind:'sat',route:'*',v:-15,days:3});news(s,'RMT strike day. A skeleton service runs.','bad')}}]}}},
+ {id:'signal',w:4,cd:6,run(s){const r=busiest(s);const where=(s.op==='swr'||s.op==='southern')?'Clapham Junction':pick(r.calls);addMod(s,{kind:'ppm',route:r.id,v:-18,days:1});news(s,`Signal failure at ${where}. Delays on ${r.from} – ${r.to}.`,'bad')}},
+ {id:'animal',w:3,cd:8,run(s){const r=pick(openRoutes(s));const a=r.kind==='commuter'?pick(['A swan has sat down on the line','A fox is running up and down the track','Escaped dogs on the line']):pick(['Cows on the line','Sheep on the line','A very large swan is blocking the line','Deer on the line']);addMod(s,{kind:'ppm',route:r.id,v:-10,days:1});news(s,`${a} near ${pick(r.calls)}. ${pick(['Driver proceeding at caution.','Nobody is quite sure whose job this is.','A guard has gone to have a word.'])}`,'bad')}},
+ {id:'trespass',w:2,cd:10,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'ppm',route:r.id,v:-12,days:1});news(s,`Trespassers near ${pick(r.calls)}. Power off while police attend.`,'bad')}},
+ {id:'engineering',w:3,cd:20,run(s){const r=pick(openRoutes(s).filter(x=>x.mi>12));if(!r)return;const c=dayRev(s)*.35;return{kicker:'Network Rail',title:`Blockade on ${r.from} – ${r.to}`,body:`<p>Network Rail needs the line this weekend for track renewals between ${pick(r.calls)} and ${r.to}.</p>`,choices:[
+   {label:'Hire rail replacement buses',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'demand',route:r.id,v:.75,days:2});addMod(s,{kind:'sat',route:r.id,v:-4,days:3});news(s,`Rail replacement buses on ${r.from} – ${r.to}. Nobody likes them, but they turn up.`,'')}},
+   {label:'Divert trains the long way',sub:'Free, but slow',fn:()=>{addMod(s,{kind:'ppm',route:r.id,v:-16,days:2});addMod(s,{kind:'demand',route:r.id,v:.85,days:2});news(s,`Diversions on ${r.from} – ${r.to}. Scenic, at least.`,'bad')}}]}}},
+ {id:'overrun',w:2,cd:20,run(s){const r=busiest(s);addMod(s,{kind:'ppm',route:r.id,v:-20,days:1});addMod(s,{kind:'sat',route:r.id,v:-6,days:2});news(s,`Engineering works overran at ${pick(r.calls)}. Monday morning is ruined.`,'bad')}},
+ {id:'snow',w:4,cd:12,can:(s,d)=>[11,0,1].includes(d.getUTCMonth()),run(s){const c=dayRev(s)*.5;
+   return{kicker:'Weather',title:'Snow and ice forecast',body:'<p>Frozen points and icy rails are on the way. Overnight gritting and de-icing runs would keep things moving.</p>',choices:[
+   {label:'Run de-icing trains overnight',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'ppm',route:'*',v:-4,days:2});news(s,'De-icing trains out overnight. Lines clear.','good')}},
+   {label:'Hope it misses us',sub:'Risky',fn:()=>{if(chance(.7)){addMod(s,{kind:'ppm',route:'*',v:-22,days:3});addMod(s,{kind:'demand',route:'*',v:.8,days:3});news(s,'Frozen points everywhere. Trains stranded.','bad')}else news(s,'The snow missed. Lucky.','good')}}]}}},
+ {id:'heat',w:4,cd:12,can:(s,d)=>[5,6,7].includes(d.getUTCMonth()),run(s){addMod(s,{kind:'ppm',route:'*',v:-8,days:2});addMod(s,{kind:'demand',route:'*',v:1.05,days:2});news(s,'Heatwave. Network Rail imposes blanket speed restrictions in case the rails buckle.','bad')}},
+ {id:'match',w:2,cd:14,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'demand',route:r.id,v:1.35,days:1});news(s,`Big match near ${r.to} today. Expect packed trains on ${r.from} – ${r.to}.`,'')}},
+ {id:'viral',w:1,cd:60,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'sat',route:'*',v:4,days:28});news(s,`A guard's deadpan announcements on the ${r.to} line have gone viral. Everyone loves you this week.`,'good')}},
+ {id:'delay',w:3,cd:40,can:s=>s.units.some(u=>u.st==='order'),run(s){const os=s.units.filter(u=>u.st==='order');const cls=pick(os).cls;const add=rint(25,60);os.filter(u=>u.cls===cls).forEach(u=>u.days+=add);news(s,`${C[cls].builder.split(' /')[0]} report software problems. Class ${cls} deliveries slip by ${add} days.`,'bad')}},
+ {id:'rosco',w:2,cd:30,run(s){const opts=Object.values(C).filter(c=>c.usedPrice);if(!opts.length)return;const c=pick(opts);const p=c.usedPrice*.6*1e6;return{kicker:'Leasing company',title:`Cheap Class ${c.id} ${c.name} available`,body:`<p>A rolling stock company has a spare ${c.cars}-car Class ${c.id} coming off another contract. They'll let it go for 40% off.</p>`,choices:[
+   {label:'Buy it',sub:money(p),disabled:s.cash<p,fn:()=>{spend(s,p);const u=addUnit(s,c.id,{built:c.year+rint(0,6)});news(s,`${unitName(u)} bought cheap and sent to the depot.`,'good');unlock(s,'first_used')}},
+   {label:'Pass',fn:()=>{}}]}}},
+ {id:'grant',w:1,cd:80,run(s){const g=dayRev(s)*1.2;s.cash+=g;news(s,`DfT Access for All funding: ${money(g)} towards step-free stations.`,'good')}},
+ {id:'evasion',w:2,cd:60,run(s){const c=dayRev(s)*.5;return{kicker:'Revenue',title:'Fare dodging is up',body:'<p>Ticket barriers keep getting jammed open and revenue is leaking. Revenue protection officers would plug the gap.</p>',choices:[
+   {label:'Hire revenue protection',sub:money(c),fn:()=>{spend(s,c);addMod(s,{kind:'revenue',route:'*',v:1.04,days:56});news(s,'Revenue protection officers deployed. Penalty fares flying.','good')}},
+   {label:'Ignore it',fn:()=>{addMod(s,{kind:'revenue',route:'*',v:.96,days:28});news(s,'Fare evasion continues to eat into revenue.','bad')}}]}}},
+ {id:'minister',w:1,cd:60,run(s){const p=s.last?s.last.ppm:90;if(p>=90){addMod(s,{kind:'sat',route:'*',v:2,days:14});news(s,'The Rail Minister rode your 07:12 and it was on time. Smug press release issued.','good')}else{addMod(s,{kind:'sat',route:'*',v:-2,days:14});news(s,'The Rail Minister rode your 07:12. It was 23 minutes late. There were cameras.','bad')}}},
+ {id:'pacer',w:3,cd:45,can:s=>s.units.some(u=>u.cls==='142'),run(s){s.units.filter(u=>u.cls==='142'&&u.route).forEach(u=>addMod(s,{kind:'sat',route:u.route,v:-6,days:20}));news(s,'Passengers start a petition about your Pacers. It has more signatures than the Pacers have seats.','bad')}},
+ {id:'tea',w:1,cd:50,run(s){const r=pick(openRoutes(s).filter(x=>x.kind==='intercity'))||pick(openRoutes(s));addMod(s,{kind:'sat',route:r.id,v:-3,days:5});news(s,`The trolley ran out of tea on the ${r.to} service. Unrest reported in coach C.`,'')}},
+ {id:'praise',w:1,cd:50,run(s){const r=pick(openRoutes(s));addMod(s,{kind:'sat',route:r.id,v:4,days:14});news(s,`A driver on the ${r.to} line waited for a running passenger. Local paper calls it "a Christmas miracle".`,'good')}},
+];
+function randomEvent(s,d){
+  const pool=EVENTS.filter(e=>(!e.can||e.can(s,d))&&!(s.cd[e.id]>s.day));
+  let tot=pool.reduce((a,e)=>a+e.w,0),x=Math.random()*tot;
+  for(const e of pool){x-=e.w;if(x<=0){s.cd[e.id]=s.day+e.cd;const m=e.run(s);if(m)EMIT.modal(m);return}}
+}
+/*SIM-END*/
+const GEO={"gb":"M217.8 593L217.4 595L221 594.2L224.5 595.7L228.5 595.7L231.2 592.8L231.6 589.8L233.7 586.4L234.4 580.5L239 582.5L246.5 582.2L253.2 579.1L257.1 578.8L260.1 575.9L262.8 575.1L266.1 576.8L268.4 575.4L269.9 575.8L275.5 579L281 577.8L283.3 578.3L288.3 583.2L288.1 588.8L286.8 592.6L287.2 593.5L291 594L292.3 595.7L291.2 601.8L295.8 604.1L297.9 609L300.8 612.6L301.9 618L305.2 619.5L306.9 621.7L305.9 619.5L302.1 615.6L302.9 613.8L304.8 614.3L307.7 617.5L308.4 620.7L308.2 623.6L306.1 627.1L299.4 629.8L296.7 632.8L294.6 636.7L295.8 639.4L296.9 639.1L299.8 635L305 632L308.2 633.2L315.1 632L316.1 633.7L317.4 634.2L318.6 640.3L320.7 643L321.1 648.4L323.4 651.4L323 654.5L321.7 656.3L321.7 660.9L320.1 663.1L320.9 664.1L319.2 666.1L318.4 666.3L316.7 662.1L314.8 659.7L316.9 654.3L316.7 651.1L315.1 647L309.4 642.3L307.7 642.3L308.2 643.8L306.9 646.3L312.1 648.4L309.4 649.4L311.3 650.4L311.1 652.8L312.1 653.9L312.1 656L310 662.1L307.3 664.8L314.8 661.7L316.5 663.4L316.9 667.3L316.3 670.2L314.8 672.4L312.8 674.4L311.7 674.4L311.3 676.6L310.2 677.1L309 675.4L305.6 675.1L298.3 676.9L297.7 686L296.4 689.6L288.1 696.3L285.8 696.5L283.7 695.7L283.7 695L285.4 694.3L280.1 692.6L279.5 690.8L278 690.1L275.1 689.6L274.7 690.2L273.9 689.4L272.2 690.1L269.7 688.9L268.9 693.3L265.5 694.5L264.3 693.1L257.6 695.1L256.3 694.6L254.6 696.3L253.8 695.8L251.3 693.1L252.3 689.7L251.7 688.6L253.6 685L253.2 683.2L250 680.1L247.1 681.6L244.6 679.8L242.5 676.7L241.7 673.9L239.2 672.4L240.6 670.7L239 665.4L237.7 665.1L236.9 662.7L231.2 658.7L229.3 658.8L224.9 665.1L223.1 666.4L221.2 666.4L221.6 668.3L221.2 669.3L219.9 669.6L220.1 670.7L222 671.7L221.8 673L223.9 674.7L223.1 675.9L223.3 677.6L217.8 680.3L217.2 682L218 683.3L216.8 683.8L217 685.9L216 687.4L214.9 687.4L215.1 683.5L213 685L214.3 688.6L209.3 687.9L208.9 686.5L207.6 686.4L208.2 685.4L206.8 685.4L203.2 687.5L196.9 686L195.5 683.2L191.3 679.9L183.8 679.6L182.5 678.9L181.3 671.3L177.1 670L174.1 664.2L172.5 664.2L169.5 662.1L165.2 656.1L164.1 653.8L170 651.2L174.1 645.7L180.8 646.9L188.8 640.4L191.1 639.6L191.1 637.6L188.6 638.6L185 636L183.1 636.9L182.1 635L179.6 633.9L179.6 631.3L178.3 630.3L181.3 629L183.1 626.9L187.5 629.5L189.4 629.3L194.6 625.6L200.7 625.9L200.7 620.7L205.9 613.8L206.6 611.6L206.3 606.8L208.6 604.8L208.2 601.4L209.1 600.6L208.9 599.6L210.9 596.4L215.3 595.4L217.8 593ZM484 938.3L481.3 941.3L478.5 942L472.7 945.4L467.9 945.7L466 943.7L463.7 946.9L459.3 949.4L456.2 954L454.5 954.7L455.3 956.9L453.9 960.3L451.8 959.7L447.8 961.6L433.2 960.1L426.1 952.3L424.2 952.8L421.7 951L419.2 942.4L415.6 937.8L407 939.3L406.4 940.8L407.9 943.7L405.6 943.7L405.4 944.4L403.5 943L402.4 944.4L399.5 943.4L396.8 945.7L395.1 945.1L394.9 946.1L389.7 944.4L389.3 943L390.3 942.2L389.7 938.3L391.6 937.6L392.8 935.4L392.8 937L393.7 937.6L401.2 935.9L402.4 932.4L400.3 933.6L394.9 931.4L389.5 932.7L388.2 932.2L386.5 930.9L384.5 927.3L387 927.7L388.4 926.7L386.3 926.5L385.5 925.6L384.9 924.5L385.7 922.8L385.3 921.1L383.4 923.8L381.7 922.4L380.7 922.6L381.7 925.3L379.6 926.5L373.2 925.8L369 926.8L367.1 928.3L365.2 934.9L363.8 934.1L362.5 935.4L356.4 935.6L351.8 940.3L347.2 938.5L345.8 937.3L346.2 936.3L345.4 934.2L342.6 933.6L341.4 932.2L341.8 931.5L346.2 932.2L346 930.7L349.1 931.4L356 928.3L357.5 928.7L355.8 926.1L355.4 923.8L356.4 921.8L358.5 921.2L358.5 920.4L356.2 921.8L352.3 922.4L353.9 922.9L353.9 925.3L354.8 926.1L353.5 928.2L349.1 929.4L339.7 928.2L338.7 928.7L339.3 930.2L337.8 931L337.8 929.4L333.9 926.7L336 926.5L338.3 924.1L342 922.1L341.2 914.3L335.5 912.3L330.3 913.6L331.1 913L331.6 908.2L334.9 907.7L336.6 905.7L341.4 904L343.3 902.3L344.3 897.4L347.5 897.4L350.6 899.3L353.5 898.5L353.1 897.1L357.7 898.5L357.9 895.1L361.3 893.6L364.6 888.7L367.3 890.2L367.3 887.3L369.4 886.1L376.7 886.5L384.9 879L388.2 878.4L395.1 872.1L398.5 867L401 861.1L401.8 854.7L403.3 851.2L403.3 847.1L406.6 847.5L409.5 845.1L409.5 844.2L403.5 845.8L399.3 839.7L400.3 834.6L402.9 831.8L403.3 829.9L407.2 826.5L403.7 827.9L398 819.8L398 817.9L399.7 816.9L398.9 811.2L402.9 808.1L402 807.3L400.6 808.6L399.5 807.3L396.6 808.6L393.2 808.1L387 810.8L381.7 811.3L378.6 814.9L377.3 817.4L378.2 819.8L376.5 821.1L371.9 818.2L370 819.8L365.6 819.8L364 821.3L362.3 821.1L363.8 816.9L371.9 807.1L376.1 805.6L380.7 801.9L381.9 799.7L385.7 797.1L386.8 788.7L387.4 788.5L387.8 789.9L388.8 787.5L391.1 784.5L392.8 783.6L396.2 778.2L399.3 776.7L402.6 777L407.9 773.8L414.4 771.1L416.2 771.1L413.5 766.2L415.8 766.7L417.5 768.3L418.7 767.6L420 768.1L422.9 771.3L429.6 771.1L431.9 770.6L443 764.9L447.6 765.9L450.1 768.8L457.4 773.8L459.5 776.5L459.7 772.5L453.9 762.4L453.7 760.7L454.3 759.6L459.1 758.3L461.2 756.4L462.4 756.6L463.9 758.3L467.2 767.6L471.4 771.1L473.3 771.1L473.9 769.8L477.7 770L479.2 769.1L479 766.9L480 765.6L482.1 764.9L477.7 765.9L477.3 767.4L476.2 767.9L473.7 767.6L468.9 765.1L465.8 760.7L458.7 744.1L459.5 741.2L463.3 734.7L470.4 726.4L465.4 726.4L463.3 725.4L461.8 723L462 712.2L461.2 709.3L463.5 706.8L469.8 704.6L471 705.4L472.9 703.3L472.1 702.1L474.1 700L474.4 698.4L470.6 699.7L469.3 696.5L472.7 691.9L475.4 690.1L476.4 687.5L473.1 680.6L475.6 678.8L476.4 675.1L475 677.8L470.2 681.3L468.1 684.5L465.6 684.7L464.7 684L463.5 681L463.7 678.8L462.4 677.4L461.8 677.8L461 683.8L457.6 689.1L456.2 689.9L456.2 693.6L454.1 690.8L450.5 688.7L451.1 685.5L450.1 682.7L452 682L452.6 673.7L451.1 675.2L450.5 677.8L451.1 679.8L446.8 680.8L440.9 672.2L440.5 665.4L439 664.8L436.9 660.7L427.7 648.7L429 647L431.9 635.7L435 627.8L438.2 625.6L439 623.9L439 620.2L441.9 611.7L444.5 609.7L446.8 611.4L449.7 610L446.1 608L448.4 605.7L452.2 604.6L454.1 606L457.4 606.7L463.3 604.6L459.3 604.6L459.3 603.8L463.3 603.1L463.3 602.4L461.6 601.8L456.8 603.1L438.2 601.8L435.5 600.8L434 602.3L431.5 600.4L430.7 603.1L431.5 606.3L430.9 611.6L429.8 612.2L422.9 611.9L421.7 614.1L417.5 613.4L417.9 614.1L416.9 614.4L416.2 613.4L416.9 612.1L417.5 612.7L417.1 611.4L415.6 613.4L416 614.8L414.8 615.6L416.7 617.5L408.5 622.9L405.8 623.2L403.9 623L403.5 622.2L403.7 617.6L402.9 616.8L401.2 619L401.6 622.4L399.3 622.7L396.4 620.8L394.3 617.3L394.9 613.4L392.6 615.8L390.7 616.1L385.7 613.4L384.5 610.2L383 609.2L381.7 613.1L383 617.5L385.7 618.3L386.5 620.5L385.7 622.9L386.5 624.4L385.7 625.7L386.3 629.8L384.2 632L379.6 629.8L377.6 630L371.9 622.5L365 618.1L361 616.6L360 613.9L356.7 613.4L353.9 614.9L351 619L351.8 623.2L354.6 629.6L356 631L355.8 635L356.7 636.7L351 634L351 627.1L349.1 626.4L348.3 622.9L346.4 621.7L339.3 612.1L337.8 604.6L338.5 599.1L341.2 598.4L341.8 596.9L344.7 602.4L344.5 606L345.6 608L347.7 609L348.7 608L349.1 606.5L346.6 601.4L345.6 597.4L345.6 594.5L347.9 585.9L351.4 583.2L356.2 577.5L357.9 571.5L358.1 566.8L361.7 563.1L362.9 558.5L368.8 555.2L370.7 550.4L368.8 546.2L366.7 545.5L367.7 543.7L367.5 541.5L366.3 539.5L364.6 538.1L359 536.3L359.4 534.6L354.1 530.8L353.1 529.2L355.6 526.5L356.4 524.3L355.2 517.8L355 508.1L357.1 505.2L360 504.2L367.5 506.7L377.1 508.1L378.6 507.2L369.8 505.4L367.3 503.8L364.4 500.1L361 498.3L358.5 492.2L357.7 492L357.5 493.7L361.3 500.8L359.8 501.8L357.1 501.1L356.4 499.8L356.2 493.4L358.5 487.6L362.7 481.2L362.7 479.3L357.1 488.8L355.8 488.8L355.4 488L354.6 482.6L353.7 482.2L353.1 483.2L355 492L353.9 494.5L354.6 501L353.9 501.5L351 500.3L353.5 503.8L351.4 507.9L350.8 510.9L349.3 512.9L346.8 512.6L346 511.6L344.3 504.2L341.2 498.9L340.3 499.8L343.5 506.9L343.5 509.9L338.5 506.4L337.8 503L336.2 508.2L334.3 510.8L336.8 516.8L331.1 514.8L330.3 511.4L328.6 508.7L329.7 504.2L328.8 500.3L336.6 488.1L342.4 484.9L346 478.3L351.8 474.8L353.1 472.3L350 475.1L346.6 475.8L344.7 477.2L342 482.6L335.1 487.1L330.3 494.2L328.4 494.9L327 499.1L323.2 498.9L322.6 497.2L322 504.5L323.4 505.2L325.5 512.6L324.9 513.5L329.5 519.2L329.9 521.7L328.8 523.8L325.9 524.9L322.6 528.8L321.1 534.6L319.9 535.6L320.3 539L322 540.8L321.7 542.2L320.1 543.2L320.5 545L318.8 548.2L318.8 551.6L318 551.8L315.9 556.5L314.4 557.2L314.4 557.9L316.3 558.5L318.6 562.6L318 564.1L315.1 567.8L311.3 569.7L308.8 568.8L306.3 570.4L304.6 570.2L302.9 568.7L302.1 562.1L302.5 560.1L306.9 555.2L306.5 548.6L307.3 545.7L306.5 543.5L309.4 535.9L309.6 533.9L308.8 532.5L312.1 530L314.6 524.3L319 521.1L322 515.5L313.6 523.6L312.8 523.6L313.2 522.2L310 520.2L309.2 515.5L312.5 509.7L315.3 506.5L309.4 511.3L308.8 511.3L307.9 508.4L314.4 498.8L315.3 496.2L314.4 495.9L312.1 497.6L311.7 499.4L309.2 502.3L308.4 506.2L307.5 506.4L307.3 505.7L307.9 501.8L314.8 490.3L317.6 491.3L315.9 486.9L318.8 481.2L317.1 481.7L313.2 485.9L316.5 478.3L315.9 477L319.9 473.9L318.6 472.9L314 475L313.8 472.9L315.7 465.8L316.9 464.7L319.4 465.2L322.4 464L317.1 464L318.8 459.9L320.3 459.3L322 455.9L323.8 455L329.7 454.5L334.3 455.7L336.4 455.4L341.6 449.3L344.7 443.5L342.6 445.6L341.2 449L336.8 453.8L334.3 454L328 452.7L326.5 454.2L325.5 453.5L324.7 449.6L322 453L321.1 452.5L323.6 446.2L324.9 447.6L327.8 448.1L334.3 443.5L332.4 444.6L330.3 444.7L327.6 446.8L324.5 445.6L327.4 439.3L331.1 435.3L329.9 433.9L331.8 432.6L334.1 432.6L335.7 431.1L339.5 431.9L348.7 428.4L339.1 430.4L334.5 428.4L335.1 426.3L339.5 421.8L341.4 418.2L334.9 424L332.8 428.7L328.6 430.7L325.9 434.4L323.8 435.3L322.4 437.5L319.9 439.3L313.6 447.1L309.2 450.3L308.2 448.6L303.8 446.2L305 442.9L302.3 445.7L298.7 444.9L290.2 438.1L290 435.8L290.4 434.9L296.2 434.9L299.8 437.3L300.2 436.6L298.1 434.9L298.1 433.9L304.4 429.9L305.6 429.7L310.9 431.9L314 431.7L316.9 430.4L310.2 430.9L304.8 428.5L296.4 432.6L292.9 431.1L288.9 431.4L284.5 430.4L283.1 430.4L281 432.2L277.4 430.4L276.6 428L279.9 424.5L288.7 423.6L291.4 421.8L293.3 421.8L299 425.3L298.5 423.1L296.9 422.3L296.9 421.6L298.3 421.4L299.8 422.3L301.9 420.8L304.4 421.6L300.2 419.4L299 418.2L299 417L305.9 415.5L308.2 414.5L310 412.6L307.3 413L306.3 414.7L302.9 414L305.6 410.6L303.1 410.1L297.7 411.3L295 410.6L299 409.9L297.3 407.8L301 399L304.6 397.3L306.1 397.6L309.2 401.7L312.1 402.3L318 400.3L318 399.6L313.2 401.2L311.9 400.8L308.6 399L309 396.4L307.7 395.6L305.2 396.3L302.5 394.1L306.5 388.3L309.2 388.2L310.9 387L316.1 390L321.7 390L322.4 389L325.1 389.3L324 388L316.9 389.3L314.4 386.6L309.6 385.3L308.8 384.3L309.2 382.4L312.1 378.4L311.1 376.7L312.3 374.8L314.8 373.3L316.9 373L322.6 377.7L324.9 377L324.9 376.3L321.7 375.3L319.2 372.3L322.8 368.1L321.3 367.6L319 370.3L314.8 372.3L310.2 370.9L306.5 371.6L306.1 370.3L307.7 366.7L310.5 364.5L311.5 366L312.8 365.9L319.2 362.8L322 360.6L322.4 357.8L321.3 357.6L315.7 363.7L311.3 362.7L313.2 361.1L312.1 358.3L307.3 364L302.9 365.2L301.5 364.5L300.4 360.6L301.3 360.1L300.4 358.4L301.3 355.7L298.5 354.7L297.7 350.7L299 347.6L299.2 344.1L300.2 344.1L299.8 342.1L300.6 341.7L302.7 342.4L310.7 348.8L311.3 348.8L310.5 346.8L314.6 346.1L318.4 346.5L318.6 345.8L316.9 344.4L314.2 343.9L311.7 344.3L310 345.6L308.2 343.4L308.8 342.1L306.9 341.7L304.2 336.7L301.7 335.8L301.3 334.5L302.9 332.1L302.5 330.4L305.9 329.2L308.2 330.9L309.2 329.1L307.3 327L301.7 325.7L301.3 316.7L303.3 313.2L306.3 312.7L309.2 314L310 320.8L311.5 322.6L313.2 323L312.1 320.8L314.4 321.5L314.4 316.9L310.7 312.2L311.3 311.2L310.5 310.5L312.8 307.1L314.2 308.5L316.5 308.5L316.1 311.2L320.1 314.4L322 314.7L323 310.2L324.2 309.1L327.8 310.8L331.4 313.9L335.5 315.4L334.7 313.9L329.9 310.2L325.5 308.1L325.5 306.4L326.8 306.9L327.2 305.8L331.1 309.1L334.3 308.6L336.2 309.8L341.4 313.2L344.3 316.7L342.9 312.9L335.5 307.8L335.5 307.1L337.2 306.4L336.6 303.9L331.4 301.9L329.1 299.2L327.6 298.8L328 298.3L327.2 297.1L323.6 296.8L324.5 294.8L322.4 291.6L323.6 290.2L325.7 290.7L327.2 293.4L328.4 292.4L330.9 292.9L332.4 291.4L331.6 287.9L332.4 287.9L332.4 287.2L331.1 286.5L333.7 285.7L334.3 284.5L330.7 283.8L331.1 283.1L329.3 281.8L329.7 279.8L328.2 279.2L325.5 275.5L325.7 273.8L326.5 273.5L331.4 275.9L336 273.8L338.5 274.9L341 272.8L344.5 274.9L348.3 274.9L352.3 277.7L349.5 274.9L352.7 273.5L347.9 272.8L345.6 274L342.9 272.3L339.1 267.3L338.5 265.4L338.5 264.6L339.5 264.6L338.9 262.5L340.1 258.5L345.2 261.4L347.5 261.2L345.8 260L345.2 257.8L342.6 258.5L343.5 257.1L342.2 256.3L345.6 254.6L348.7 256.3L342.2 251.2L342.2 249.4L342.4 248.5L346.8 245.6L348.1 238.2L349.1 237.2L356.7 238.7L357.9 239.6L359 240.8L359.8 244.1L359 247.5L360.4 245.8L361.5 239.2L364.2 242.3L368.2 244.5L367.7 246.8L365 249.4L362.3 255.3L363.3 255.1L367.3 251.2L367.7 249.7L370.9 247.5L372.5 242.6L374 241.9L376.5 242.4L381.7 245.3L381.7 247.5L380.3 249L377.8 255.1L381.3 251.6L381.3 250.4L386.5 246.2L388.6 245.3L392.8 247.5L392 246.8L393.7 244.8L396.2 245.3L397.8 243.5L401.8 243.8L404.7 240.4L406.2 242.9L412.5 243.5L417.5 242.8L424 238.9L429.8 237.2L433 237.9L432.3 238.6L433.6 239.7L438.6 238.6L443.4 239.9L444.2 237.9L441.1 235.9L440.5 234.5L442.8 232.3L443.8 232.5L444.9 235.2L452.6 233.8L455.7 235.9L461.4 235.2L463.5 236L461.8 241.3L457.6 246.8L457 248.7L457.6 251.6L458.9 252.2L460.8 251.7L461.4 253.4L457 263L451.8 269.5L442.2 273.5L439 276.4L437.1 280.6L434.6 283.1L421.9 292.8L417.5 294.8L416.4 295.8L415.2 299.7L407 303.9L406.4 306.4L405.2 305.8L405.6 305.1L401.6 303.6L402 305.8L405.6 306.8L407.2 309.1L406 311L406 313.2L402.4 312.5L400.3 314.7L393.9 312.5L389.1 313.7L384.9 309.5L383.6 309.1L388.6 314.9L390.9 315.4L394.5 314L397.8 317.1L398.7 316.9L398.5 315.4L404.1 318.3L407.5 315.7L410.4 317.4L409.5 318.8L411.4 319.3L415.6 316.6L418.1 313.4L419.4 314.4L418.7 316.9L407.2 330.4L405.2 330.2L404.7 329.2L405.6 327.7L403.9 326.2L396.8 331.1L389.5 331.9L388.6 334.5L383 339L381.5 342.2L384.5 341.1L387.4 337.3L394.7 332.4L399.5 334.3L406 331.1L406.2 332.4L404.9 334.5L399.5 340.7L400.3 342.1L396.6 342.9L395.5 344.1L396.2 345.1L391.1 344.8L391.1 345.6L394.5 346.1L392 350.2L395.1 350.8L397.8 348.1L399.7 347.8L401.6 345.6L404.5 344.3L401.6 341.4L416 340.7L424.8 334.6L428.4 333.8L427.1 335.8L427.7 336.5L430.2 335.8L429 333.1L431.3 334L433.4 333.8L435.3 332.1L436.1 328.7L437.8 329.1L440.9 327.7L448 327.9L452.4 330.6L459.9 333.1L464.9 332.4L469.3 329.7L478.5 329.7L480.2 331.1L484.4 330.2L491.1 331.8L492.1 333.1L493.8 331.8L497.6 333.1L498 332.4L499.4 333.1L501.7 331.8L503.6 332.6L505.5 330.4L510.5 332.4L515.3 329.7L522.9 329.7L524.1 332.4L526.6 331.8L532.5 338.7L533.5 343.9L534.6 345.6L534.1 347.5L536.4 350.2L535.6 350.3L535.4 352L536.6 352.7L532.5 357.4L531.4 360.6L523.7 368.1L520.1 377.4L518.3 384.6L518.5 386.5L519.7 388.2L511.8 401.5L510.9 405L511.8 407.2L511.6 409.1L509.9 412.8L507 415.3L503.2 420.9L498 424.8L496.3 430.9L494.8 433.1L494.4 438L491.9 441.9L486.5 445.7L485.4 447.8L482.1 449.6L479.8 453.3L478.3 452.5L461 454.9L456.8 457.2L450.7 463.3L448.2 464.1L445.7 463.5L447.6 464.7L451.1 464.3L467.5 456.9L468.5 455.2L471.2 454.2L473.3 455.9L475.4 455.9L476 457.2L475.6 460.9L473.9 463.5L475.6 463.6L476 465.5L477.9 466.7L483.3 467.2L489.2 471.6L485 477.2L480.8 478.3L475.8 481.2L470.8 479.2L466.6 479.5L459.3 486.8L457.2 487.8L454.3 494.2L450.1 494.4L444.7 497.2L440.1 497.6L430.7 494.9L425.6 494.9L421.3 492.9L417.1 488.8L416 489.3L420.4 492.7L422.7 496.9L424.6 496.9L425.9 498.8L431.1 498.3L441.1 501L445.3 500.6L447 502.3L457.4 503L459.9 505.4L463.7 505L468.1 503L471.4 499.1L472.9 498.9L472.1 496.9L474.8 494L476 493.5L485.8 494.2L489.6 497.6L488.8 499.8L491.9 500.3L493.2 498.9L504.7 506.5L514.7 508.6L515.1 511.1L518 513.1L522 520.9L529.8 530.5L532.9 536.4L533.9 536.6L535.4 535.4L536.9 536.6L537.3 538.1L536 538.1L536 538.8L540.2 538.8L544 541.5L543.8 543.5L544.8 545L544 546.2L545.6 547.6L545.2 549.3L546.7 551.6L546.5 562.4L548.4 567.2L547.5 571.4L551.3 580.5L550.4 583.2L551.9 586.6L552.7 591.5L554 592.1L556.7 599.9L559.6 603.5L560.1 609.5L564.7 625.2L566.8 627.8L570.7 629.8L570.7 630.6L569.5 631.1L571.1 634.7L568.6 636.7L569.1 637.9L570.7 637.4L571.1 638.7L571.8 638.7L572.6 635.4L574.7 637.6L578.3 638.2L581.2 640.3L593.1 644L606.1 652.3L608.4 655.3L608.6 658L611.9 661L613.8 665.1L614.6 670.3L616.1 671.7L615.7 673L617.3 675.2L622.8 678.3L623.6 682.3L625.3 684L632.4 686.9L634.5 688.7L629.3 691.6L627.4 693.8L626.1 697.7L630.1 710L646.6 735.7L647.4 739L646.8 742.3L645.1 743.8L646.6 738.9L642 735.8L640.8 735.3L636.2 737.4L632.2 736.2L623.6 726.4L621.1 726L613.8 728.6L607.1 729.1L605.2 727.2L601.9 726.7L596.6 729.9L598.5 731.3L599.4 729.8L602.7 728.7L607.9 732.3L610.4 730.6L620.9 728.6L622.6 729.3L627.8 738L633.2 742.3L636.2 742.9L638.9 746.5L644.3 751.2L647.7 752.4L648.9 756.3L651.4 758.1L651 758.8L653.1 760.8L659.4 781.1L659.6 785.5L658.3 790.7L655.2 792.6L648.1 799.2L643.5 806.1L640.1 808.8L639.3 811.3L644.9 811L648.7 813.9L653.1 820.4L655.4 819.4L657.7 819.8L661 823.1L660.8 820.9L664.2 815.9L666.9 806.6L669 804.4L671.9 803L677.8 802.5L677.3 801.9L678.6 801.4L682.4 802.5L687.4 802.5L695.1 805.2L697.6 804.1L694.9 803.2L694.9 802.5L712.9 807.1L719.8 810.8L734.2 822.5L737.3 826.9L740.3 837.5L740.3 846.8L741.5 851.3L736.5 867.5L733.4 873L733.6 880L730.7 891.9L726.1 893.9L725.2 895.1L724.2 894.4L723.8 896.4L721.5 899.8L716.2 906L712.3 900.6L707.7 897.4L706 897.1L708.1 900L712.5 901.8L712.7 904.4L708.7 904.7L705.1 903.3L700.8 904.7L702.4 905.4L712 906L713.3 905.4L713.1 907.2L708.5 912.3L712.3 913.6L713.5 911.8L712.9 915.5L706.6 920.9L700.5 922.4L699.1 921.8L695.7 915.7L694.7 918.5L690.3 921.8L689.5 925.3L687.4 926.7L683.4 926L679.4 928L682.4 929.2L683 930.7L684.7 929L688.2 928.2L692.8 925.6L693.9 927.5L693.2 929.4L694.1 932.2L693.4 932.7L693 936.4L691.8 937.6L693.2 937.5L694.1 938.3L692.4 941.2L689.5 944L683.6 947.3L676.3 946.4L675 947.8L672.5 948.3L671.9 949.1L669.2 948.3L665.2 949.4L663.8 953.3L661 954.7L664.8 954L666.1 952L669.8 950.8L679.2 952.3L680.7 954.3L680.3 955.9L676.1 955.5L674.2 957.6L671.1 958.7L672.3 960.6L680.3 961.6L679.4 959.1L679.6 958.1L680.9 958.1L683.2 963.6L695.5 965.1L702.6 962.6L721.5 960.8L722.9 961.8L721.9 966.2L721.2 967L718.7 967.3L720.8 977.8L719.2 984.9L717.5 986.9L712 989.6L710.2 989.6L708.1 991.7L703.1 992.3L700.8 993.5L694.9 1001.8L695.7 1008.2L693.7 1009.1L685.3 1006L683 1006.9L677.3 1012.9L675 1014.1L660 1018.2L654.6 1025.3L645.8 1023.9L643.3 1022.1L640.8 1021.9L628.6 1017.2L626.8 1016.8L625.3 1017.8L623.2 1016.8L615.7 1019.9L605.6 1019.9L596.2 1023.2L594.8 1022.2L593.9 1023.4L594.3 1025.3L592.9 1027L585.8 1022.2L588.7 1019.2L586.2 1017L584.7 1017.7L585.4 1016.3L584.3 1015.6L579.5 1015.6L577.4 1021.7L576 1021.9L574.7 1020.5L576.8 1015.6L575.5 1015L571.1 1015.6L573.2 1017.5L573.7 1020L573.4 1021.2L572 1021.9L565.9 1016.8L563.2 1015.6L561.1 1012.8L553.6 1008.2L553.6 1008.9L556.1 1010.1L561.9 1017.5L562.4 1020L556.3 1021.2L557.1 1022.6L552.3 1024.2L550.2 1023.9L548.1 1028.1L545.6 1026.8L540.4 1025.9L535.8 1028L531 1027.3L528.7 1028.3L526.2 1030.8L525.6 1028.6L521.4 1028L520.3 1025.9L517.8 1030.2L520.6 1028.6L522.4 1031.8L525.4 1032.4L525.4 1034.9L526.6 1035.6L524.5 1038.3L524.7 1039.8L518.9 1040.5L513.4 1037.9L502.8 1036.6L500.7 1035.2L499.4 1035.4L497.3 1036.2L495.9 1039.3L495.7 1041.5L496.1 1042.5L497.6 1043L497.8 1044.2L496.3 1047.2L495.9 1043.5L494.6 1041L482.3 1030.7L472.5 1026.6L466.8 1027.6L464.7 1029.1L461.2 1028.6L457.2 1031.5L454.9 1030.7L449.5 1032.5L447.4 1036.2L443.2 1038.3L440.1 1037.1L437.6 1032.2L437.3 1033.4L438.2 1034.2L439.4 1038.9L436.5 1043.2L435.3 1047.9L436.3 1054.1L433.6 1054.5L432.3 1056.8L432.7 1058.4L436.3 1058.9L436.3 1059.5L435.7 1061.6L434.6 1062.1L434 1064.9L433.2 1065.6L431.5 1064.4L431.1 1066.6L427.9 1068.8L426.9 1072.5L427.1 1077.4L426.3 1077.9L422.9 1078.8L419.6 1077.8L418.7 1078.8L413.3 1072L408.7 1067.8L405.2 1070.3L403.3 1070L402.4 1069L402.9 1067.8L400.1 1066.3L399.5 1064.8L400.3 1062.9L396.8 1062.4L395.3 1058.2L397.2 1054.1L394.9 1054.1L394.7 1055.2L392.8 1056.2L393.9 1058.4L393.2 1060.2L389.7 1060.2L390.7 1061.7L393.9 1061.2L395.3 1062.2L393.2 1062.9L393.2 1063.6L394.9 1063.6L394.5 1064.4L396 1064.4L394.9 1065.8L395.3 1067.8L394.1 1067.6L391.8 1064.4L387 1062.9L384.2 1063.3L377.8 1067.1L368.2 1067.8L367.7 1068.5L366.3 1065.6L362.1 1067.8L362.7 1069.8L361 1072.2L361.5 1073.9L360 1077.1L357.1 1076.6L355 1078.5L351.4 1080.1L348.3 1085.5L347.2 1080.8L346.4 1080.1L345.4 1080.5L344.7 1084.2L346 1085.5L343.7 1086.7L343.5 1089.1L341.2 1090.4L344.1 1090.9L345.2 1094L342.6 1098.5L339.9 1098.9L337.4 1104.1L334.5 1101.2L333.7 1097.2L330.7 1092L320.9 1086.9L316.9 1088.6L317.4 1091.8L315.7 1094L309.6 1095.7L307.5 1094.8L306.9 1091.8L307.9 1091.5L308.2 1090.4L307.3 1086.7L308.6 1083.9L318.8 1078.1L320.1 1077.9L323 1080.6L324.2 1079.8L325.9 1075.9L328 1075.9L330.1 1074.6L336.8 1067L339.7 1064.9L339.5 1060L345.6 1057.2L347.5 1046.2L351.4 1043.8L352.3 1048.1L353.1 1047.2L357.5 1048.6L356.9 1047.2L353.9 1045.9L352.9 1044.5L353.1 1041.1L354.6 1041.5L360.4 1040.5L362.9 1035.6L362.9 1033L364.2 1032.7L368.4 1028.8L369.4 1025.9L373 1022.6L374.6 1019L374.2 1010.2L376.1 1002.8L375.9 998.6L381.1 998.6L383 999.8L387 1000.3L388.8 999.3L394.5 992.3L391.6 984.9L394.1 984.9L394.3 982.7L393.2 980.7L397.6 978.8L408.3 977.8L411.6 976.6L417.1 976.5L419 975.3L427.3 977.3L432.1 977.1L439.4 979L442.2 981.4L448.8 981L455.1 979.3L461.2 979.2L462.9 978L463.3 978.7L462.4 980L463.3 980.7L464.5 978L463.3 967.7L464.9 967.9L466.8 962.6L466 961.6L467.2 960.1L469.1 960.6L476.2 951.8L481 950.1L482.3 948.8L487.3 939.3L489 938.1L490.2 934.1L495.7 927.5L500.1 925L500.3 922.6L499.4 921.8L499.2 923.6L498.2 924.6L494.6 925.6L492.3 929.4L488.8 931.9L484 938.3ZM576 1028.6L577 1031.5L571.6 1034.9L570.9 1039.6L564.5 1041.8L562.4 1041.1L552.5 1033L548.8 1033.5L547.7 1034.2L549 1031.3L551.3 1029.1L556.3 1026.6L556.1 1028L557.3 1027.8L562.2 1022.7L573.9 1026.6L575.1 1027.3L575.3 1028.8L576 1028.6ZM583.1 1019.2L584.3 1021.9L579.5 1021.2L579.5 1020.5L580.8 1019.9L582.2 1017L583.7 1017.7L583.1 1019.2ZM691.8 958.7L693.4 961.8L693.2 963L691.8 963.6L684.9 963L681.9 959.9L681.3 958.7L682.2 956L683.4 955.2L691.8 958.7ZM373 772.8L374 774.7L373.8 775.9L372.8 775.9L369.8 771.6L367.1 771.5L366.3 769.1L367.7 767.6L370 767.9L371.5 769.1L373 772.8ZM400.8 769.1L403.3 769.1L403.9 769.8L400.8 775L395.1 778.1L393.7 779.9L393.7 781.8L386.5 786.8L383.6 786.2L382.6 786.8L382.6 784.5L384 781.8L383.4 781.3L380.5 784.1L378.6 781.9L377.8 781.9L377.8 780.6L377.6 778.9L373.4 772.5L374 763.7L373.4 760.7L374.4 760L381.7 757.3L387.6 758.1L390.5 759.8L390.9 763L392.8 764.2L392.8 766.1L394.1 767.6L394.7 770.1L398.3 769.8L399.5 768.3L400.8 769.1ZM276.6 568.8L280.1 569.7L279.5 573.1L279.1 573.7L279.3 572L278 570.5L273.9 570.4L276.6 568.8ZM344.3 549.1L343.1 549.9L343.9 554.5L341.6 556L335.7 556.2L330.7 553.8L328.4 551.8L327.6 546.9L328.4 545L325.9 541L325.5 535.4L327.8 531L329.7 529.5L331.6 529.2L331.1 527.6L333.2 527.6L337 529.5L339.9 534.6L341.2 539.5L340.3 540.8L342.9 543.3L343.1 545.5L341.6 545.9L341.4 547.6L344.3 549.1ZM346.6 525.1L347.9 527.1L346.8 527.6L345.6 525.1L341.8 521.6L340.3 515.8L337.8 513.8L336.8 508.9L338.7 507.9L343.7 512.1L344.1 514.3L345.6 515.5L346.8 518L347.7 523.1L346.6 525.1ZM288.5 527.1L288.9 531.9L287.7 532.5L287 534.1L286.6 533.2L282.6 536.8L277.8 537.3L277.2 539.8L273.7 542.2L272.2 541.7L271.8 537.1L276.2 534.1L274.3 529.7L271.6 528.5L271.8 526.6L275.7 522.2L272.8 521.4L270.1 522.6L267.8 527.8L263.4 532.5L261.7 532.9L261.1 531.9L262 528.5L261.1 527.6L264.3 522.2L262.4 520.9L263.6 519.7L264.5 515.1L271.1 510.9L271.8 511.3L270.7 515.5L272.2 518.2L271.8 515.5L273 513.3L282.2 505.9L283.3 507L284.5 519.9L287.5 523.4L287 525.8L288.5 527.1ZM278.5 489.6L280.1 489.3L279.7 488.1L282.4 487.5L282.6 488.8L280.1 493.9L280.1 495.6L279.1 496.4L276 496.9L274.7 496.2L278.5 489.6ZM302.1 488.8L306.9 484.7L308.2 485.3L308.4 488.8L305.4 492.3L296.9 511.3L293.5 514.1L292.5 519.5L291 520.5L288.7 520.4L286.8 519L285.8 516.5L285.4 511.8L286 508.4L290.6 504.8L295 504L296.9 502.3L291.4 503L290.6 501.5L291.2 499.1L294.8 494.4L297.7 493L302.1 488.8ZM308.4 479.9L309.4 482L306.3 483.7L305 483.9L305.6 482.2L308.4 479.9ZM311.7 473.6L312.3 474.3L312.8 473.6L313 475.1L311.9 478L311.5 481L309.6 477.8L311.7 473.6ZM311.7 468.2L312.3 467.5L314.4 467.4L313.2 470.2L313.6 471.6L312.3 472.4L311.3 471.7L310.9 470.1L311.7 468.2ZM316.1 458.6L319.2 457.9L317.4 460.8L314.4 461.3L316.1 458.6ZM281 453L276.6 453L275.1 451.7L276.4 450L277.8 449.6L281 453ZM242.7 446.2L247.3 445.2L247.9 446.9L247.1 448.3L243.8 448.6L243.6 450.3L242.5 451.3L239.8 452L238.7 453.8L239.2 455.5L237.9 455.7L234.4 454L232.9 449.6L239.4 447.9L242.7 446.2ZM308.4 456.6L310.2 459.9L307.5 460.6L306.7 460.3L306.5 458.7L305.2 458.6L305.4 459.9L302.9 462.6L302.9 463.5L304.8 462.3L307.9 462.5L306.7 464.7L301.5 468L299.2 468.7L297.3 467.4L299 465.7L299 464.7L297.7 464.1L296.2 464.7L295.4 466.5L288.1 469.6L286.6 471.1L284.3 470.2L281.8 471.6L276.4 471.6L274.9 473.6L273 473.3L270.3 471.2L269.1 467.9L269.7 466.3L270.9 465.5L273.4 465.5L276 468.9L277 467.4L275.7 466.7L279.5 466.9L281.4 465.5L285.4 464.7L289.1 461.8L288.7 461.3L281.4 464.1L279.9 464L278.5 462L279.3 460.3L281.2 459.3L282.4 455.7L283.5 455L285.6 455.2L289.1 453.5L290.2 452L289.3 449.6L282.9 452.5L281 449.1L279.1 447.6L273.7 446.8L270.7 444.7L273.4 442.9L271.6 439.3L273.7 439.2L275.5 438L277 439.2L277.6 436.8L281.6 434.8L283.5 434.6L287 435.9L286.6 438L288.5 438.1L292.3 445.6L292.5 447.4L299 447.6L300.2 449L302.3 448.3L304.4 451L306.5 451L308.6 453.5L308.8 454.9L310.9 455.2L310.5 457.2L308.4 456.6ZM263.6 432.2L261.1 437L259.7 437.3L257.6 440.2L254.6 442.5L251.5 442.2L251.1 444.2L249.6 441.4L251.1 441.2L252.8 439.7L256.1 434.8L260.9 431.4L263.4 430.9L264 431.2L263.6 432.2ZM209.5 399L210.5 401.7L208.4 402L206.6 403.7L207 404.7L205.5 405.7L199.9 404.7L201.5 402.3L202.6 400.8L201.7 399L205.7 396.8L206.1 394.1L208.2 395.6L207 397.6L209.5 399ZM271.6 394.1L275.7 397.3L274.7 399L276.2 399L275.5 402.7L274.3 404.7L270.5 405.9L268.4 402.9L263.8 399.6L269.3 394.4L271.6 394.1ZM255.1 394.7L259.2 392.7L261.3 393.6L262 394.1L258.6 395.3L255.1 394.7ZM292.7 371.6L290 369.6L289.5 368.2L291 367.4L294.4 369.3L294.8 370.8L292.7 371.6ZM218 367.4L219.9 369.6L221 369.4L220.6 370.9L218.7 372.6L217.4 376.3L216.2 376.8L211.8 375.7L211.8 376.3L216.6 378.4L217.2 382.1L216.6 385.1L214.5 384.4L212.2 384.4L212.2 385.1L216.2 385.1L219.7 388L218.5 390L213.7 389L211.8 390L210.1 388.2L208 381.9L208.2 378.4L205.9 376.3L209.7 368.7L207.4 361.3L211.8 359.1L217 362.7L214.9 362.7L214.9 363.3L219.3 365.4L219.3 366L217.8 366.9L213 363.8L210.7 361.3L209.5 362L210.7 364.5L213.9 365.5L215.3 367.2L218 367.4ZM217 351.7L217 352.9L218.5 352.4L220.6 353.7L217 355.1L217.2 356.1L220.3 357.4L220.3 358.1L215.3 359.5L209.3 356.6L208.6 355.4L208.9 353.5L210.7 351L217 351.7ZM286.6 365.4L285.8 362.8L286.8 354.7L289.3 353.7L288.3 351L288.9 350.3L290.6 351L289.8 348.8L290.8 349.3L291.2 351.9L289.3 358.1L289.3 361.3L291 365.2L287.2 367.4L286.2 366.7L286.6 365.4ZM292.3 348.1L291.2 347.8L291.4 343.4L292.5 342.2L292.9 342.7L292.3 348.1ZM224.7 334.6L227.9 335.3L228.5 336.7L226.6 339.2L225.8 339.2L222.4 335.8L219.7 335.8L219.7 336.7L220.8 336.8L220.6 338.7L222.6 339L223.3 341.2L226.2 340.7L224.9 342.9L218.5 344.8L217.4 342.7L214.1 344.8L214.1 345.6L218.3 345.6L221.8 344.6L223.9 345.1L224.5 346.1L223.1 348.8L220.8 348.7L218.5 349.7L214.5 348.8L212.2 345.6L213.9 344.8L206.6 342.1L205.3 343.4L200.7 340.7L204.7 333.8L205.9 334.5L209.9 333.8L209.9 334.5L208.2 335.1L209.3 336.5L214.1 331.1L213 333.8L217.4 335.1L216.2 333.8L221.8 331.1L222.6 332.9L221.4 334.5L224.7 334.6ZM257.6 365.4L256.7 366L250 363.5L248.8 362.3L247.9 358.3L245.4 356.6L244.8 354.4L248.4 354.4L246.9 351.2L248.8 348.7L252.8 354.1L255.1 355.6L254.8 353.7L255.5 353L253.6 350.2L254.8 348.8L257.6 349.7L255.5 346.3L252.3 344.8L253.8 342.4L253.2 339.2L255.3 340L257.1 341.7L258.2 344.8L262 347L263.4 348.8L265.9 348.1L264.7 351.2L267.2 348L272.2 353.7L271.6 350.3L267.8 344.8L269.5 340.7L267.2 340L267.4 338.7L266.1 335.5L269.1 333.6L270.7 330.1L271.6 330.4L272.2 329.7L281.2 340.2L282.6 352.4L281.8 357.4L279.5 360.6L281.2 359.3L283.1 359.1L283.5 360.3L282.2 362.7L282.4 364.2L284.5 366.7L281.4 369.4L286.4 368.7L287.9 369.9L285.8 372.3L290 371.3L291.6 373L294.8 373.3L295.8 375.2L296.9 375.8L298.1 374.3L300.6 374.3L302.3 372.8L305.4 372.3L306.5 373.5L310.9 373.5L309.8 376L310.2 377.7L308.4 381.1L306.3 382.8L302.9 383.4L301.9 387.7L299 389.7L294.1 395.9L290 397.1L288.5 395.6L288.7 393.7L290.4 391.5L291 388.2L293.7 384.4L299.4 381.9L299.4 381.2L296 382.4L291.2 382.6L290.6 380.4L287.9 377L288.9 380.4L287.5 383.1L287.9 383.9L285.2 387.3L283.1 380.4L282.2 381.2L280.1 379.7L281 381.2L280.1 381.9L271.8 383.9L274.3 379.7L270.3 381.2L268.2 377.7L270.3 375.7L266.6 375.7L263.8 372.3L262.4 368.7L266.1 366.5L267.4 366.7L270.7 369.9L272.2 370.3L271.6 368.9L266.8 364.9L263.4 365.4L264.3 364L262.8 363.3L263.4 362.7L262.4 361L262.8 360L259.9 362L260.3 360.1L259.4 358.4L259 359.8L257.1 361.3L257.6 365.4ZM219.3 329.1L221.8 326.5L222.9 326.4L223.5 327.4L222.4 328.6L219.3 329.1ZM138.2 316.7L142.2 318.1L141.1 319.3L139.9 319.6L138.8 318.8L138.2 316.7ZM229.8 309.8L228.5 311.8L227.7 312L227.7 310.8L231.4 307.8L232.5 308.5L232.5 310.7L231.8 311L229.8 309.8ZM239.6 278.4L240.4 278.4L240.4 277.7L239.2 276.4L239.2 274.2L240.4 274.7L243.3 276.7L244.4 279.1L239.6 279.1L239.6 278.4ZM235 325.7L233.3 326.5L224.9 316.9L224.9 316.2L226.6 316.2L227.7 318.8L233.1 313.5L237.3 313.2L234.4 311.2L234.4 310.5L239.2 308.6L242.1 309.8L240 307.8L241.7 307.1L241.7 306.4L238.3 306.4L235 304.4L231.6 304.4L230.2 303.9L229.8 302.4L228.5 302.9L225.8 301L228.1 298.8L229.3 298.8L228.9 297.5L236 294.8L228.9 296.1L229.5 294.8L230.8 294.8L230.8 294.1L229.3 294.1L230.8 292.1L227.9 293.8L225.8 290.1L226 288.9L224.9 287.5L226.8 283.1L225.8 281.8L231.2 281.1L229.1 279.9L229.3 276.7L230.4 275.5L237.7 278.4L237.7 279.1L236 278.9L236.2 280.3L238.3 282.8L238.7 286.3L240.4 289.4L240.4 286.5L238.7 283.1L239.8 281.1L244 279.8L246.9 281.8L247.5 283.1L249.2 281.1L247.1 279.8L246.5 276.9L244.8 276.9L243.1 273.5L244.4 272.8L244.2 272.2L242.7 271.5L248.8 266.1L252.8 265.4L258 263.2L259.9 260.8L270.3 253.8L274.9 248.9L276.2 248.9L277.4 250L280.8 258L279.5 258.5L277.8 263.2L280.6 264.6L280.6 265.4L275.7 268.8L276.2 269.6L275.5 270.6L272 273.2L271.4 276L269.1 276.2L270.1 277.9L274.7 278.4L279.1 274.9L281.6 274.2L280.6 276.9L281 278.4L276.8 281.6L273.2 280.1L270.7 280.4L267.2 279.1L269.1 283.8L268.6 285.8L267.6 286.7L264.7 287.2L262 290.1L259.9 289.4L258.4 290.7L254.4 291.4L254.4 292.1L256.5 292.1L266.8 289.4L268 290.9L268.2 293.4L269.1 294.1L267.2 295.5L269.9 296.1L267 299.3L265.7 299.7L258.6 298.3L258.8 299.5L263 301.4L263.8 303.1L260.9 306.4L258.4 305.8L259.2 307.8L257.8 308.5L256.7 308.3L253.8 304.4L254.4 308.5L251.9 307.1L249.6 302.4L249.2 299.7L250 297L251.7 295.5L255.9 294.8L255.9 294.1L250.5 294.1L250 296L246.1 299.7L247.9 303.7L251.3 307.1L250 307.8L251.5 309.1L251.9 312L245.2 309.8L244.6 310.2L243.6 312L246.1 313.2L247.3 316.9L244.4 317.4L244.8 318.8L240.8 316.7L240.4 317.4L241.7 318.8L238.7 321.5L239.6 322.1L235 325.7ZM467.2 215.9L471.2 216.8L471.2 218L469.5 219L469.1 220.3L469.8 225.2L468.1 226.9L465.4 224.2L466 222.9L463.7 218.8L465.2 219.3L466.4 218.8L466.4 218L462.4 218L462.4 217.4L467.2 215.9ZM450.1 220.8L455.3 219.1L457 219.3L455.5 221.3L452.6 222.2L447.2 222L445.5 218.1L442.6 214.6L442.6 212.6L440.1 212.6L439.4 211.5L440.5 209.2L444.2 207.1L450.3 210.4L453.4 214.6L452.6 215.9L454.5 218L452 218.6L450.1 220.8ZM480.4 202.9L481.3 203.3L481.7 206.8L477.1 209L474.8 211.9L468.9 209.5L465.6 203.9L463.3 206L459.7 205.6L460.6 207.1L458 207.3L457.6 208.5L456.4 207.8L452.8 208.3L451.4 207.1L450.7 205L450.9 202.8L452.6 199.5L451.4 196.2L450.3 197L450.5 198.9L448.6 198.9L449.7 202.3L447.8 205L445.7 204.3L444 201.7L443.2 198.4L444.7 194.7L444.2 190.3L445.7 187.2L448.4 185.7L453.9 185.4L455.5 185.7L457.4 187.6L459.7 187.2L461.8 189.2L460.6 189.9L464.9 192.6L464.1 193.3L464.9 194L461 195L459.3 198.2L457 199.5L457.8 200.2L461.2 200.9L463.9 198.2L466 200.1L468.5 198.9L470.6 200.9L471.6 200.2L471.2 202.3L472.5 202.6L474.4 201.2L477.3 200.9L477.3 202.6L473.9 205L475.4 207.1L476.4 207.3L477.7 207.1L476.4 204.3L480.4 202.9ZM491.1 187.9L491.1 189.8L492.7 190.6L491.7 191.6L487.9 192.6L487.7 190.4L486.9 189.2L485.8 189.1L484.8 189.9L485 191.4L483.8 191.8L482.7 191.1L484 189.2L486.5 188.4L486.7 187.2L484.6 184.9L484 184.5L487.1 183.8L486.7 185.2L489.6 185.7L488.1 186.2L488.8 187.9L491.5 187.2L491.1 187.9ZM464.3 187.2L460.8 186.7L457.8 184.2L457.6 182.3L458.7 181L461.8 180.3L462.9 181.8L467.2 181.6L466 183.7L466 186.5L464.3 187.2ZM474.4 180.3L477.1 180.3L476.7 176.2L477.5 174.7L478.5 174.7L477.9 176.2L480 176.6L480.4 177.6L478.5 180.6L478.5 183.5L480 185.2L477.3 185.9L476 183.2L474.4 182.5L474.4 180.3ZM496.7 170.7L498.8 168.1L499.9 171.5L495.9 172L493.4 176.6L492.7 176.9L492.7 174.7L489.2 177.6L489.6 175.6L487.5 175.6L484.2 179.3L483.1 178.9L482.7 181L482.7 178.3L486.3 174.2L488.1 173.5L488.4 172.2L487.1 170.7L492.3 169.3L489.2 172.9L490 173.5L494 171L496.7 170.7ZM461.8 168L460.3 167.5L460.1 166.6L464.1 166.6L466.6 163.9L467.7 165.1L466.6 165.9L466.8 167.3L465.4 167.3L465.4 168L470.6 169.7L471.6 172.4L473.9 173.5L474.4 174.7L472.5 175.2L471.2 176.9L472.1 174.2L467.7 170.8L466 170.7L466.8 172.9L466 172.2L465.2 173.4L464.1 172.9L461.8 168ZM542.9 147L544.4 144.5L546.9 144L546.9 144.7L545.6 144.8L545.2 146L546.1 146L546.1 146.9L543.1 148.6L542.9 147ZM593.3 38.5L594.8 39.3L594.6 41.2L593.1 42.3L588.3 41.2L589.1 43.2L587.5 43L584.3 37.1L591 37.1L591.8 39.1L593.3 38.5ZM575.1 58.4L576.6 55.5L578.7 55L573.4 61.6L573.9 62.6L575.1 60.9L576.8 60.4L576.6 64.1L570.7 65.3L576.4 67.8L572.6 70.9L572.8 72.4L575.5 72.7L572.2 75.1L571.1 74.9L569.5 72.7L569.9 75.4L568 76.1L568 76.8L570.3 76.8L569.1 79.5L571.6 77.5L569.5 82.4L571.8 80.7L572.4 81.2L571.6 83L573.4 85.1L572 85.1L572.4 86.4L571.4 85.9L569.1 87.1L569.7 88.6L568.4 89.3L568.4 90L569.9 90.6L569.1 91.6L569.5 93L571.1 94L569.9 96.2L568 96L569.5 100.3L569.1 101.4L566.3 100.3L566.5 104.5L565.1 107.7L564.7 107L565.5 109.2L564.7 111.7L565.5 113.4L564.7 114.6L563.6 112.6L563.2 113.6L562.6 113.4L563.2 111.1L562.4 110.4L559.6 110.4L558.8 109.2L559.9 107.9L560.1 105.5L561.9 104.8L560.5 102.3L561.9 102.3L561.5 100.4L563.2 97.2L565.5 88.4L565.1 85.7L563.8 84.4L565.1 81.5L563.4 82.4L562.6 81.9L565.1 75.4L564 75.4L561.5 79.5L559.9 75.6L556.9 74.1L560.5 78.8L560.1 80.3L557.6 78.8L557.1 82L556.7 82.4L556.3 81L555.7 81.5L554.8 84.4L551.9 83L550 80.7L551.1 79L553.6 78.3L551.5 75.6L550.9 77.8L549.6 79L548.8 77L545 78.5L544 77L542.3 76.6L540.6 71.6L542.5 69.4L544.8 68.5L548.8 70.7L548.4 69.4L550.4 70L550 68.7L552.7 68.3L553.6 69.2L554 72.1L554.8 71.4L554 69.4L555.3 69.4L554.8 67.8L556.1 67.3L557.8 67.8L559 69.2L559.6 71.4L561.1 69.4L559.6 67.8L560.7 65.3L562.4 65.8L561.7 64.8L565.5 64.5L561.1 62.6L560.7 60.4L559 61.9L557.8 61.1L558.4 57.7L555.3 56.9L554.8 50.8L552.7 54.3L551.7 53.1L552.7 51.5L550.7 51.8L548.8 50.8L547.5 52.3L545.2 51.6L546.1 49.3L548.4 48.8L548.8 46.1L550.9 44.2L552.3 47.4L554.2 49.1L556.5 49.8L558.4 48.8L555.5 48.1L553.8 46.2L552.7 46.1L554.4 43.2L556.9 42L556.1 41.2L556.3 39.1L559.4 38.8L562.4 40.7L562.8 39.8L561.7 39L561.9 38L563.2 35.8L563.8 37.6L563.8 40L562.8 41.2L563.2 43.5L561.1 46.7L562.4 46.7L561.1 47.4L562.4 48.1L561.1 51.5L563.2 50.1L563.6 50.8L562.8 54.3L561.7 54.7L559.2 59.7L561.9 59.1L561.9 57.2L563.4 56.2L567.2 55.7L563.6 52.8L565.5 51.8L565.5 53.5L568 50.3L569.9 51.8L569.5 52.8L571.4 54.5L571.1 56.4L572 56.9L569.9 56.9L567.6 58.9L569.9 58.4L569.1 59.7L571.1 58.7L572.4 61.1L574.7 56.9L575.1 58.4ZM581.4 30.2L580.8 31.4L581.8 34.4L581.2 36.4L578.3 33.9L577 33.7L579.9 38.5L578.3 39.1L576.8 38.5L577.6 40.3L579.5 40.7L579.1 41.2L580.1 42.2L580.1 43.5L578.3 44.7L579.3 47.2L579.3 49.8L575.3 49.3L575.1 48.4L574.5 49.4L575.1 50.8L573 50.4L570.9 46.9L570.7 35.4L572.6 35.1L573.2 38.1L574.7 38.5L573.4 34.1L574.3 31.9L573.9 29.3L575.3 26.5L576.2 26.5L576.8 28.2L578.5 26.6L581.2 26.8L580.6 29.7L581.4 30.2ZM586.2 31.5L582.6 31L582.6 27.5L583.7 28.2L583.5 24.8L584.5 24.4L584.9 23.1L584.3 20.1L588.3 15.5L588.9 18.7L587 20.7L588.7 20.2L591 15.2L593.9 16.7L594.6 18.7L593.1 19.4L594.6 20.1L591.8 22.1L592.3 24.1L591 24.1L592.3 25.5L589.3 28.2L591 31.5L590.2 32.4L586.2 31.5ZM562.4 90.6L562.8 92.3L561.3 95.7L561.3 92.3L561.1 93.7L559.4 95.5L561.1 90.6L560.7 89.1L562.4 88.4L562.4 90.6ZM519.5 84.4L519.9 87.1L518.9 88.3L516.2 86.2L517.6 84.4L519.5 84.4ZM577 83.5L577.8 83L577.6 85.2L576.4 89.3L575.7 89.5L573.7 87.8L573.9 84.4L572.8 83.2L572.8 82.2L575.1 82.4L576.2 81.2L577 83.5ZM585.4 61.4L585.6 62.3L582 66L579.9 66.7L578.7 66L579.3 65.1L580.3 63.1L585.4 61.4Z","ie":"M217.8 593L210.9 596.4L208.9 599.6L205.9 613.8L200.7 620.7L200.7 625.9L194.6 625.6L187.5 629.5L183.1 626.9L178.3 630.3L183.1 636.9L185 636L188.6 638.6L191.1 637.6L191.1 639.6L180.8 646.9L174.1 645.7L170 651.2L164.1 653.8L169.5 662.1L174.1 664.2L177.1 670L181.3 671.3L182.5 678.9L191.3 679.9L196.9 686L203.2 687.5L208.2 685.4L209.3 687.9L213.2 688.6L213 685L215.1 683.5L216 687.4L217.8 680.3L223.3 677.6L223.9 674.7L220.1 670.7L221.2 666.4L224.9 665.1L229.3 658.8L231.2 658.7L239 665.4L240.6 670.7L239.2 672.4L244.6 679.8L247.1 681.6L250 680.1L253.2 683.2L251.3 693.1L253.8 695.8L268.4 693.6L269.7 688.9L273.9 689.4L284.1 698.7L281 702.6L269.5 698.4L268.4 708.3L269.9 711.9L276.2 713.6L277 734.3L285.8 744.5L282.6 753.9L279.1 753.9L282.9 755.8L283.1 760.2L287.5 761.5L286 763.4L282.6 760.8L277.6 765.2L284.7 771.5L284.5 778.6L288.5 788.9L287.5 799L290.8 804.2L282.9 818.4L277.8 833.4L278.3 845.4L269.7 859.1L269.1 865.5L263.2 864L263.4 862.1L261.5 863.5L266.6 871.1L268.6 867.7L267.8 870.4L271.8 876L269.5 881.4L267.2 881.4L267.4 878.7L265.7 880.6L263.2 880.7L263.4 879.2L256.7 882.2L248.8 878.4L243.6 878.7L246.1 873.8L241.7 876.5L242.5 882.1L236.2 887.5L237.9 882.7L232.5 871.1L233.5 881.4L235 882.1L232.3 885.3L226.2 887L228.1 883.4L225.4 882.7L226.2 884.8L224.3 884.1L221.4 886.8L207 887.5L199.4 891.7L197.4 889.8L195.9 893.7L200.7 894.6L198 900.8L191.1 902.7L190.2 905.5L184.2 904.7L182.9 902L181.7 907.1L178.7 908.8L180.4 911.8L173.7 914.5L173.1 917.5L159.9 919.7L160.8 916.3L164.1 914.3L162.4 913.6L163.3 910.6L157.2 909.6L149.3 911.6L155.1 913.8L154.1 917L156.8 917L157 923.4L148.9 930.7L146.1 928.7L146.1 932.2L144.5 929.4L141.7 929.4L145.3 930.7L143 934.6L143.4 939L140.9 935.4L130.2 935.4L134.2 937L133.8 942.4L124.6 940.3L120 946.4L116.7 943.7L111.8 945.1L109.1 943.7L108.7 947.1L105 947.6L103.1 951.3L100.8 951.3L100.4 949.1L96 952.7L94.1 952.7L96 950L94.3 950.5L97.2 945.7L92.8 950L92.8 945.4L90.3 944L90.1 945.6L80.7 950.6L78 947.9L75.3 952.7L68.6 955.4L67.7 951.3L84.5 939L81.7 938.6L66.9 945.1L81.5 934.4L89.5 931.5L89.7 927.5L85.9 927.5L83.6 923.8L84.5 928L79.7 931.5L65.4 934.4L56.5 940.3L51.2 940L48.9 941.7L49.1 939.5L54.6 937L52.9 932.9L57.9 932.2L60.6 929.4L58.1 928.7L61 925.3L64.6 923.8L64.8 925.6L66.5 922.4L70.5 923.1L69 921.2L73.4 916.3L82.4 912.3L72.1 915.3L66.1 919.6L64.8 917.7L50.2 925.8L45 921.8L47.3 921.1L46.8 916L44.5 914.8L38.3 921.2L38.3 915.7L35.5 915.3L35.1 911.6L43.3 909.1L40.4 904.7L42.7 901.2L56.2 895.9L59.8 891L62.3 893.7L63.3 887L71.3 887.5L70 886.1L72.1 884.8L60.6 885.4L60.6 889.2L58.1 886.1L47.3 889L41.8 886.3L40.4 887.5L42.2 888.8L36.6 887.5L37.4 888.8L32.6 890.2L30.3 884.8L33.2 880.4L36.4 882.4L36.8 877.2L42 873.1L48.1 871.3L48.5 876.5L52.3 876L55.4 873.1L54.6 869.1L57.3 869.4L57.5 874.6L61 876.2L65.4 876.7L68.2 874.1L69.2 875.8L73.4 875.1L66.1 873.1L65 870.4L66.3 871.6L67.7 871.1L66.5 870.4L68.2 869.1L67.7 862.5L61 858.8L75.3 851.7L79.2 852.7L76.5 850.5L78.4 842.9L88.9 843.7L90.7 842.2L102.4 841.9L113.1 836.8L115.8 838L118.5 834.8L130.7 832.8L118.3 830.6L119.4 822.5L114.8 825.3L107.7 837.7L101.4 838.8L99.5 840.9L96.8 840.2L99.9 836.1L90.9 838.8L85.7 836.3L84.5 833.3L82.4 833.4L84 836.1L75.9 839.5L75.1 842.1L61.7 844.2L68.4 840.5L79.7 827.2L87.2 824.8L87.6 819.8L95.5 806.6L88.4 805.9L93.7 799.2L100.4 785.3L106.8 788.9L111.8 788.2L112.1 786.5L108.7 784.1L112.1 783.5L115.8 785.5L113.5 782.6L117.3 782.4L119.8 785.5L118.7 781.9L122.3 777.9L113.5 777.9L118.3 776.5L116.7 775.2L119.4 773.8L114.8 772.5L86.3 777.2L83.2 773.8L83.8 771L80.5 776.4L80.3 767.9L83.6 765.9L81.3 763.5L84 761.5L80.1 762.2L80.9 765.1L79.2 766.9L78.2 760.7L73 768.6L69.2 769.8L67.1 767.6L63.8 767.6L64.6 764L70.5 760.7L68.6 760.2L69.8 758.1L65.2 760.5L66.9 756.6L63.1 757.5L62.5 761L60.2 762L56.7 761.5L55.2 759L47.9 758.8L49.8 755.4L55 754.6L53.1 751.9L57.3 751.9L51.9 750.5L49.8 746.1L46.2 745.6L47.7 744.5L51.9 745L51.4 742.9L53.9 742.9L57.7 745.6L59.8 743.8L55.4 740.1L62.1 740.1L65.6 738.2L75.7 740.2L63.3 735.3L63.3 723.9L70.2 721.3L83.2 720.3L80.1 718.3L83.6 713.6L82 712.9L83.2 710L72.1 710L63.3 714.1L61.3 712L62.9 704.6L66.3 704.1L70.5 708.3L70.5 705.3L69 703.4L67.9 704.4L64 697.5L67.7 688.7L65 688.7L62.9 693L59.8 692.1L58.5 689.6L63.3 688.2L59.4 682L61.7 681.3L57.5 678.1L57.1 681.1L55 681.3L55.8 683.3L53.1 684L54.2 687.5L52.5 688.2L54.2 690.6L51.2 690.4L50.6 687.5L54.6 677.8L51.4 676.6L58.1 669.6L60.6 672.9L65 673.7L62.3 677.2L59.4 675.7L59 677.8L63.3 679.6L67.1 672.4L71.7 674.4L69.8 671.7L72.1 671.7L67.3 669.3L67.1 667.1L70.5 666.3L75.1 668.3L87.4 668.3L93.9 670.3L96.8 668.1L100.6 669.6L101.8 672.4L103.9 672.5L103.9 678.3L107.5 682L107.9 685.4L108.3 679.3L110.8 677.4L113.1 671L119.6 671L124.4 673.7L134.8 672.9L140.9 679.9L144.5 679.3L138.2 673.7L139.7 671.7L147 672.4L141.1 669.5L141.3 667.6L143.4 669L144 667.3L135.9 666.3L135.7 664.1L146.8 657L147.2 652.4L148.4 655.3L162 649.7L158.5 647.7L161.6 645L164.1 638.1L166.2 639.4L167.2 635.4L157.2 639.4L156.6 636L147.6 643.5L151.8 639.4L150.9 637.1L149.7 638.1L149.9 635.9L147.4 639.8L145.5 636.7L141.5 639.1L135.1 638.1L134 635.9L128.2 634L127.9 630.1L137.1 623.2L147.6 624.4L143.4 621.2L150.5 623.7L141.7 618.1L145.7 614.8L155.3 616.8L152 614.4L152.8 611.9L156 612.1L154.7 609.7L152.4 609.2L152.2 611.4L150.5 611.2L148 607.8L148 605.3L150.7 606.5L152.8 605.1L147.6 599.7L150.1 599.7L154.1 593.5L155.3 597L156.6 594.2L155.5 589.4L158.1 583.9L162.2 585.4L166 583.9L165.2 587.6L175.6 577.8L176.7 580.2L173.9 582.5L179.6 581.2L180 584.4L182.3 583.2L180.2 586.1L182.5 586.1L183.8 583.5L181.9 578.5L185.9 574.4L184.8 580.5L190.7 583.4L191.5 590.1L193.4 585.2L191.5 578.1L190.2 578.5L191.1 582.5L186.5 578.1L188.2 574.4L194.8 572.7L196.5 580.3L199 581.8L201.7 588.4L195.1 595L199.7 595.5L192.8 604.6L205.1 595.7L206.1 592.8L204.5 590.3L205.3 585.7L200.3 578.5L202.4 574.6L201.7 571L204.5 571.5L205.1 569.7L208.6 571.4L212.2 568.5L214.9 572.4L217.4 571.5L212 566.5L209.9 561.4L220.1 565.5L224.7 571.4L235.8 576.1L235.6 578.1L222.2 585.7L217.8 593ZM77.6 772.5L78 776.7L75.9 777.4L74.4 774L75.5 772L77.6 772.5ZM60.2 704.6L62.5 704.6L60.4 711.9L54.8 708.7L54.2 703.3L47 703.6L42.7 702.6L47 698.4L50.2 700L54.4 697.7L59.4 697.8L61.7 701.1L60.2 704.6ZM143.6 599.1L146.1 602.4L142.4 603.1L141.5 601.3L142.6 598.4L143.6 599.1ZM68.8 936.1L69 937.3L62.9 938.1L63.8 936.3L68.8 936.1ZM39.9 907.4L40.4 908.9L33.2 911.8L37.6 906.9L39.9 907.4ZM78.4 789.9L70.9 787.7L69.6 785.3L72.5 786.5L77.1 787L78.4 789.9Z","im":"M370.9 694.3L365.6 691.4L360.6 693.6L363.8 687.5L365.2 677.9L371.7 672.4L375.7 663.4L384 658.5L386.1 658.7L384.7 665.1L388.4 671.3L383.4 677.8L383.8 680.5L372.1 690.9L370.9 694.3Z","fr":"M785.2 991.3L787.3 999.9L790.2 1003.8L788.4 1008.9L789 1015.5L790.9 1018.3L795.5 1019.7L799.4 1026.6L806.3 1030.3L811.3 1024.2L820.5 1022.1L826.4 1030.3L829.5 1048.6L833.9 1051.1L841.5 1048.2L841.9 1051.3L848.4 1052.3L850.4 1055.5L851.5 1068.2L853.4 1070.2L856.9 1065.3L865.1 1067.5L870.1 1065.8L423.1 1318.9L415.2 1319.9L410.2 1311.1L407.2 1309.6L407.2 1313.2L404.3 1314.5L400.3 1312L398.9 1307.6L400.1 1313L397.6 1314.5L395.7 1312.5L396 1315.9L397.6 1315.9L395.7 1318.7L384.9 1319.2L386.3 1313.7L381.3 1302.4L375.5 1297.3L373.4 1299.5L364.2 1295.9L365.9 1292.6L385.5 1288.5L389.7 1289.2L388.8 1280.4L384.5 1276.7L378.4 1275.7L374.2 1282.3L374.6 1274.7L370 1273.3L370 1271.3L373.2 1271L374.8 1265.4L376.5 1270.4L391.1 1269.9L389.7 1270.6L390.9 1271.1L395.5 1269.3L387.6 1267.9L390.9 1263.7L380.1 1266.4L383.4 1261.2L389.7 1256.8L371.7 1265L366.5 1263.7L365.6 1265.9L361.9 1265.4L360.8 1256.4L362.9 1252.7L362.1 1248L366.3 1242.4L373 1243.3L371.3 1239.7L375.7 1239.9L373.8 1237L382.8 1235.7L381.7 1234.3L386.5 1232.1L389.1 1233.6L388.6 1235.8L395.3 1235L394.1 1233.8L396.4 1230.9L402.9 1231.4L403.3 1228.7L408.1 1226.7L409.1 1234.3L412.7 1232.1L411.8 1233.6L415.2 1237L414.8 1231.4L416 1233L417.5 1226.7L430.7 1231.8L430.9 1226.7L433.8 1226L430.9 1221L434.6 1215.7L441.5 1219.3L452.2 1213L451.8 1220.6L458.5 1212.4L460.1 1217.3L458.9 1220.6L457.6 1224L460.8 1217.6L464.1 1217.9L462 1221.1L468.5 1223.3L467.7 1226.7L474.6 1234.3L475.4 1240.2L481.3 1243.9L480 1246.6L482.9 1249.2L483.3 1246L486.7 1245.6L495.9 1236.3L494.4 1235L500.3 1235L504.2 1230.1L506.3 1233L503.4 1237L504.5 1238L508 1235L510.3 1241.7L511.4 1238.4L512.6 1241.7L513.2 1238.7L515.3 1239L514.3 1236.3L519.5 1235L523.7 1248.7L526.2 1246.6L523.7 1241.1L525.4 1242.4L521 1235.7L525.8 1230.1L531.6 1228.7L530.8 1236L534.6 1238.4L543.3 1237.7L546.1 1235.8L560.1 1235.7L557.8 1233.1L555 1233.6L548.6 1225.4L547.7 1217.8L545.6 1215.1L549.2 1206.4L547.9 1204.3L549 1197L551.3 1196.7L548.8 1196L547.1 1198.7L546.3 1197.2L545.4 1189.7L547.7 1185.7L545.2 1178.4L548.8 1177.4L544.8 1176.2L544.4 1178.1L539.6 1167.1L540.2 1164.4L539.2 1166.1L536 1161.7L533.3 1161.7L533.3 1155.5L529.3 1146.8L532.1 1138.1L530.2 1133.8L525.8 1132.1L526.4 1127.6L532.1 1128.4L533.5 1131L544.8 1133.5L545.4 1135L551.1 1133.7L556.9 1128.8L565.5 1130.5L567.4 1137.6L563 1144.1L570.5 1158.5L570.1 1164.4L573.7 1165.4L576.6 1160.3L584.1 1160.9L591 1163.7L614.8 1165.8L626.1 1172L639.5 1166.6L648.3 1158.5L662.7 1154.8L667.3 1150.7L658.5 1154.3L647.2 1151.9L643.3 1148.5L649.5 1129.6L673.4 1114.3L683 1112.6L709.7 1102.1L723.3 1087.6L727.1 1078.5L735.9 1080.8L734.2 1078.8L735.5 1077.9L733.2 1077.6L728.4 1072.2L728.8 1065.1L730 1062.4L732.3 1062.9L729 1059.5L730.4 1046.7L732.3 1045.2L729.6 1032.2L732.1 1021L730.7 1013.1L739.2 1005.7L750.3 1000.3L785.2 991.3Z","st":{"London Waterloo":[632.2,949.7],"Portsmouth Harbour":[574.4,1020.3],"Woking":[606.4,968.2],"Guildford":[605,976.3],"Godalming":[602.8,981.4],"Haslemere":[597,991.1],"Liphook":[592.3,992.9],"Liss":[586.9,995.6],"Petersfield":[584.1,999.3],"Rowlands Castle":[583.2,1010.8],"Havant":[581.8,1014.6],"Bedhampton":[580.9,1014.6],"Hilsea":[577.3,1017.2],"Fratton":[576.4,1020.4],"Portsmouth & Southsea":[575.4,1020.2],"Weymouth":[496.2,1038.4],"Clapham Junction":[628.9,953.6],"Basingstoke":[575.6,973.2],"Winchester":[562.1,993.3],"Southampton Airport Parkway":[559.6,1004.9],"Southampton Central":[556.7,1009.2],"Brockenhurst":[547.4,1018.3],"Bournemouth":[530.5,1027.3],"Poole":[523.6,1028.1],"Wareham":[515.9,1030.7],"Dorchester South":[497.2,1029.1],"Exeter St Davids":[433,1027.1],"Andover":[552.1,978.8],"Salisbury":[533.9,992.9],"Gillingham":[506.8,996.6],"Sherborne":[492.8,1005.6],"Yeovil Junction":[487.1,1007.5],"Crewkerne":[477.4,1012.7],"Axminster":[464.2,1022.1],"Honiton":[453.7,1020.3],"Reading":[582.3,954.1],"Richmond":[621.3,953.7],"Twickenham":[619.7,955],"Feltham":[615,955.2],"Staines":[609.6,956.8],"Ascot":[599.5,959.4],"Bracknell":[595.1,958.7],"Wokingham":[589.8,958.8],"Windsor & Eton Riverside":[603.6,951.4],"Vauxhall":[631.6,951.4],"Putney":[626.3,953.9],"Datchet":[605.1,951.7],"Ryde Pier Head":[571.4,1026.1],"Shanklin":[570.3,1036.6],"Ryde Esplanade":[571.4,1026.7],"Ryde St Johns Road":[571.6,1027.6],"Smallbrook Junction":[571.7,1028.9],"Brading":[572.7,1032.1],"Sandown":[571.3,1034.3],"Lake":[571,1035.4],"Cosham":[576.8,1015.8],"Portchester":[573.4,1015.1],"Fareham":[569.5,1014.7],"Swanwick":[565.3,1012.4],"Netley":[560.8,1012.5],"Woolston":[558.8,1010.1],"St Denys":[558.2,1007.8],"Alton":[582.6,984.8],"Brookwood":[601.9,969.7],"Ash Vale":[596.9,972.7],"Aldershot":[594.6,975.4],"Farnham":[592.8,978.8],"Bentley":[588.4,981.9],"London Victoria":[630.4,950.5],"Brighton":[630.6,1017.1],"East Croydon":[633.4,962.4],"Gatwick Airport":[629.4,984.4],"Three Bridges":[629.4,988.3],"Haywards Heath":[632.7,999.5],"Burgess Hill":[631.4,1004.6],"Hassocks":[630.3,1007.5],"Hove":[628.9,1016.5],"Shoreham-by-Sea":[623,1016.6],"Worthing":[616.9,1018.1],"Goring-by-Sea":[613.6,1018.2],"Angmering":[610.4,1018.3],"Barnham":[601.6,1016.9],"Chichester":[593.4,1016.8],"Bosham":[589.6,1015.7],"Southbourne":[586.1,1015.2],"Emsworth":[584.3,1014.9],"Bognor Regis":[599.5,1021.2],"Horsham":[620.3,993.4],"Christs Hospital":[617.7,994.9],"Billingshurst":[612.7,998.5],"Pulborough":[608.8,1004.2],"Amberley":[607.3,1010.3],"Arundel":[607,1015.2],"London Bridge":[633.8,949.5],"Uckfield":[644.4,1003.1],"Oxted":[638.5,974.2],"Hurst Green":[639,975.5],"Edenbridge Town":[642.7,980],"Hever":[644.3,981.9],"Cowden":[645.2,984.4],"Ashurst":[647.6,987.1],"Eridge":[650.4,991.1],"Crowborough":[649.7,995.4],"Buxted":[646.4,1001],"Ashford International":[689.6,985.7],"Lewes":[639.5,1013],"Eastbourne":[655.1,1023.1],"Bexhill":[666.4,1015.9],"Hastings":[672.3,1014.2],"Ore":[673.1,1013.3],"Three Oaks":[674.4,1009.9],"Winchelsea":[679.6,1006.6],"Rye":[681.2,1004.7],"Appledore":[686.2,996.7],"Plumpton":[635.3,1007.2],"Polegate":[653.1,1017.9],"London Paddington":[628.5,948.3],"Bristol Temple Meads":[488.9,955.1],"Didcot Parkway":[566.6,938.9],"Swindon":[535.1,943.4],"Chippenham":[515.9,953.8],"Bath Spa":[501.9,962.2],"Cardiff Central":[454.1,952.4],"Bristol Parkway":[491.1,948.6],"Newport":[464.5,941.1],"Penzance":[317.5,1087.8],"Newbury":[562,960.2],"Westbury":[511,973.4],"Castle Cary":[492.3,990],"Taunton":[458.6,997.7],"Newton Abbot":[429.8,1047],"Plymouth":[398.2,1062.2],"Liskeard":[379.2,1055.3],"Bodmin Parkway":[368,1055.4],"St Austell":[360.7,1066],"Truro":[344.7,1073.6],"Redruth":[335.3,1076.7],"Camborne":[331.1,1079],"St Erth":[322.6,1082.9],"Oxford":[565,924.6],"Slough":[604.4,948.8],"Maidenhead":[596.8,948.1],"Twyford":[588.7,952.5],"Culham":[567,934.6],"Radley":[566.7,931.4],"Crowthorne":[591.2,963.4],"Sandhurst":[592.1,965.4],"Dorking Deepdene":[620,976.1],"Reigate":[627,975.8],"Redhill":[629.2,976],"Bradford-on-Avon":[508,965.5],"Romsey":[552.1,1000.7],"Okehampton":[406.7,1026.8],"Exeter Central":[433.7,1027.3],"Newton St Cyres":[430.4,1022.1],"Crediton":[427,1021.7],"Worcester Shrub Hill":[510.5,880.5],"Charlbury":[552.3,912.8],"Kingham":[544.2,909.8],"Moreton-in-Marsh":[540,900.8],"Evesham":[525.7,890.1],"London King's Cross":[631.6,946.8],"Edinburgh":[453.5,504.8],"Peterborough":[624.2,842.5],"Grantham":[601.5,809.4],"Newark North Gate":[592.3,791.9],"Doncaster":[572.6,747.8],"York":[575.3,704.2],"Darlington":[548.9,648],"Newcastle":[544.9,603.2],"Alnmouth":[543.7,560.8],"Berwick-upon-Tweed":[522,522.5],"Leeds":[548.8,720.6],"Stevenage":[626.7,909.8],"Wakefield Westgate":[551.3,731.8],"Northallerton":[555.1,666.8],"Durham":[546.9,622.1],"Aberdeen":[517,385.7],"Kirkcaldy":[454.9,488.8],"Leuchars":[470.7,462.5],"Dundee":[466.3,454.3],"Arbroath":[488.4,444],"Montrose":[495.2,428.7],"Stonehaven":[509.6,403.3],"Lincoln":[607.4,777.4],"Harrogate":[549.5,700.7],"Horsforth":[544.1,715.2],"Hull":[618.6,725.6],"Retford":[583.8,768.6],"Selby":[577,721.7],"Brough":[605.2,727.3],"Bradford Forster Square":[537,720.3],"Shipley":[535.8,716.6],"London Euston":[631,947.1],"Manchester Piccadilly":[509.3,752.3],"Milton Keynes Central":[593.8,896.6],"Rugby":[566.2,862.1],"Nuneaton":[553.7,847.3],"Lichfield Trent Valley":[534.2,831.3],"Stoke-on-Trent":[512.1,799.2],"Macclesfield":[515.6,774.1],"Stockport":[513.2,759.5],"Birmingham New Street":[528.5,852.2],"Coventry":[550.9,859.9],"Birmingham International":[538.6,854.9],"Glasgow Central":[391.5,514.2],"Stafford":[515.5,819.6],"Crewe":[497.5,791.1],"Warrington Bank Quay":[487.6,761.4],"Wigan North Western":[485.9,745.7],"Preston":[481.6,724.4],"Lancaster":[475.7,695.1],"Oxenholme":[480.7,669.5],"Penrith":[478.6,633.8],"Carlisle":[468.5,611],"Lockerbie":[444,587.8],"Motherwell":[406.8,520.8],"Liverpool Lime Street":[465.9,759.3],"Runcorn":[479.7,766.1],"Holyhead":[369.8,769.2],"Chester":[471.5,780.3],"Flint":[456.8,775],"Prestatyn":[440.9,766.4],"Rhyl":[436.2,768.2],"Colwyn Bay":[422.4,770.3],"Llandudno Junction":[417.6,771.6],"Bangor":[398.6,777.7],"Blackpool North":[461.8,717.7],"Poulton-le-Fylde":[465.1,715.2],"Shrewsbury":[479.1,828.8],"Sandwell & Dudley":[522,849.2],"Wolverhampton":[515.7,841.2],"Telford Central":[497,831.9],"Haymarket":[451.8,505.5],"Manchester Victoria":[508.6,751.2],"Rochdale":[513.8,738.9],"Littleborough":[517.1,735.7],"Todmorden":[516.8,728.6],"Hebden Bridge":[522.1,726.2],"Mytholmroyd":[523.7,727.1],"Sowerby Bridge":[528,729.2],"Halifax":[531.1,727.9],"Bradford Interchange":[537.2,721],"Keighley":[528.4,713.2],"Skipton":[521.1,704.1],"Hellifield":[509.5,699],"Settle":[506.3,693.3],"Horton-in-Ribblesdale":[505.1,685.1],"Ribblehead":[501.7,679.4],"Dent":[501.5,671.7],"Garsdale":[503.7,667.9],"Kirkby Stephen":[501.2,654.5],"Appleby":[494.4,642],"Langwathby":[484.1,630.6],"Manchester Airport":[506.8,763.5],"Edge Hill":[467.6,759.7],"Lea Green":[480.5,757.3],"St Helens Junction":[482,756.6],"Newton-le-Willows":[487,754.7],"Manchester Oxford Road":[508.5,752.6],"Ilkley":[533,707.5],"Kirkstall Forge":[544.3,717.5],"Guiseley":[539.2,712.4],"Menston":[538,710.8],"Burley-in-Wharfedale":[537,709.2],"Ben Rhydding":[534.4,707.4],"MetroCentre":[542.1,604.1],"Prudhoe":[530.5,603.4],"Hexham":[517.1,602.6],"Haydon Bridge":[508.3,602.5],"Haltwhistle":[495.8,603.2],"Brampton":[481.8,606.8],"Sheffield":[553.9,762.2],"Meadowhall":[556.7,758.3],"Rotherham Central":[559.7,756.8],"Thorne North":[582.3,738.4],"Goole":[588,729.5],"Gilberdyke":[596.3,725.2],"Middlesbrough":[567.1,642.1],"Whitby":[603.1,651.6],"Nunthorpe":[570.8,647.2],"Battersby":[575.3,654.2],"Kildale":[576.7,652.2],"Castleton Moor":[583.8,653.3],"Danby":[585.9,653.4],"Glaisdale":[592.7,656],"Egton":[594.5,656.2],"Grosmont":[596.7,656.4],"Sleights":[600.3,653.9],"Ruswarp":[602.3,653],"Cross Gates":[554.6,719.5],"Garforth":[558.5,720.4],"East Garforth":[559.1,720.8],"Micklefield":[561.8,721.1],"Church Fenton":[567.5,717.3],"Ulleskelf":[568.3,714.7],"Glasgow Queen Street":[391.9,513.7],"Croy":[404.4,504.4],"Falkirk High":[418.6,500.8],"Polmont":[423.1,501.6],"Linlithgow":[430,502.4],"Stirling":[410.3,488],"Perth":[439.1,460.9],"Inverness":[393.5,352],"Dunkeld & Birnam":[431,444.3],"Pitlochry":[421.8,429.7],"Blair Atholl":[415.2,423.5],"Kingussie":[403.4,392.2],"Aviemore":[416.4,381.2],"Carrbridge":[416.5,372.1],"Mallaig":[300.2,399.5],"Dalmuir":[381.7,508.8],"Dumbarton Central":[373.6,505.3],"Helensburgh Upper":[364.1,498.8],"Garelochhead":[358.6,492],"Arrochar & Tarbet":[364.5,479.7],"Ardlui":[364.6,469.8],"Crianlarich":[370.6,461],"Tyndrum Upper":[365.6,456.5],"Bridge of Orchy":[362.1,448.4],"Rannoch":[373,431.4],"Corrour":[366.4,424],"Roy Bridge":[357.9,411.2],"Fort William":[342.3,417.9],"Glenfinnan":[322.3,412.7],"Arisaig":[299.7,408.7],"Morar":[300.7,403.1],"Ayr":[370.2,554.2],"Paisley Gilmour Street":[381.9,515.3],"Johnstone":[377.3,516.6],"Lochwinnoch":[370.7,521.3],"Glengarnock":[367.3,526.1],"Kilwinning":[365.3,534.4],"Irvine":[367.3,538.9],"Barassie":[368.7,543.8],"Troon":[368.4,545.7],"Prestwick International Airport":[370.8,549.1],"Prestwick Town":[370.8,549.8],"Newton-on-Ayr":[370.1,552.6],"North Berwick":[480.2,494.3],"Musselburgh":[460.4,506.7],"Wallyford":[463.7,506],"Prestonpans":[466,504.7],"Longniddry":[471,502.4],"Drem":[477,499.5],"Tweedbank":[478.6,539.4],"Brunstane":[458.7,505.8],"Newcraighall":[459.3,506.7],"Shawfair":[459.3,508.2],"Eskbank":[459.8,511.9],"Newtongrange":[460.6,513.5],"Gorebridge":[461.9,516],"Stow":[472.3,530.8],"Galashiels":[475.8,538.2],"Kyle of Lochalsh":[307,372],"Beauly":[379.2,352.2],"Muir of Ord":[379.8,348.2],"Dingwall":[382,340.6],"Garve":[366.5,338.7],"Achnasheen":[344.2,342.1],"Strathcarron":[323.5,357.7],"Plockton":[309.8,366.6],"Liverpool Central":[465.8,759.6],"Southport":[464.4,735.3],"Moorfields":[465.2,759.1],"Sandhills":[465,757],"Bootle New Strand":[464.9,754.7],"Waterloo (Merseyside)":[463.1,752.5],"Blundellsands & Crosby":[462.2,751.2],"Hightown":[461.2,747.5],"Formby":[460.4,744.6],"Freshfield":[460.4,743.4],"Ainsdale":[462.1,739.8],"Birkdale":[463.7,736.6],"James Street":[465,759.5],"Hamilton Square":[463.8,760.5],"Birkenhead Central":[463.3,761.2],"Rock Ferry":[463.9,762.7],"Bebington":[464.3,764.2],"Hooton":[465.9,770.3],"Capenhurst":[467.9,774],"Bache":[470.9,779.2],"Ormskirk":[471.5,743],"Kirkdale":[465.7,755.9],"Walton":[466.5,754.4],"Orrell Park":[466.7,753.8],"Aintree":[467.1,752.6],"Old Roan":[467.4,751.3],"Maghull":[468.6,749.4],"Maghull North":[469.1,748.3],"Town Green":[470.1,745.7],"Aughton Park":[470.7,744.6],"Kirkby":[470.2,751.4],"Rice Lane":[466.7,754.2],"Fazakerley":[468.2,753.1],"West Kirby":[453.9,762.7],"Birkenhead Park":[462.3,760.3],"Birkenhead North":[461.2,759.5],"Bidston":[460,759.1],"Leasowe":[458.8,759.2],"Moreton":[458,759.3],"Meols":[455.6,760.1],"Manor Road":[454.7,760.5],"Hoylake":[454.2,761],"New Brighton":[461.8,756.3],"Wallasey Village":[460.5,757.7],"Wallasey Grove Road":[460.5,757.2],"Headbolt Lane":[471.3,750.8],"Wrexham General":[464.5,794.9],"Upton":[459.7,761.4],"Heswall":[460.3,767],"Neston":[460.9,770.8],"Shotton":[462.4,778.6],"Buckley":[461.4,783.7],"Hope":[462.4,788.3],"Gwersyllt":[463.5,792.7]}};
+
+
+/* ===================== FORMAT ===================== */
+function money(x){const a=Math.abs(x),sg=x<0?'−':'';if(a>=1e6)return sg+'£'+(a/1e6).toFixed(a>=1e8?0:1)+'m';if(a>=1e3)return sg+'£'+Math.round(a/1e3)+'k';return sg+'£'+Math.round(a)}
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(day){const d=dateOf(day);return `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`}
+function periodLabel(day){const p=Math.floor(day/28),pno=(p%13)+1,y=2027+Math.floor(p/13);return `P${pno} ${y}/${String((y+1)%100).padStart(2,'0')} · wk ${Math.floor((day%28)/7)+1}`}
+const hhmm=min=>{min=((Math.round(min)%1440)+1440)%1440;return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0')}
+const KIND={commuter:'Commuter',intercity:'Intercity',regional:'Regional',leisure:'Scenic line'};
+function stars(c){const f=Math.round(c);return `<span class="stars" aria-label="Comfort ${f} of 5">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span>`}
+function grade(s){if(!s||!s.last)return 'B';const op=OPS[s.op];const P=s.period;const ppm=P.n?P.ppm/P.n:s.last.ppm,sat=P.n?P.sat/P.n:s.last.sat;const sc=50+(ppm-op.target)*4+(sat-65);return sc>=78?'A':sc>=60?'B':sc>=42?'C':sc>=25?'D':'E'}
+function tone(v,good,ok){return v>=good?'good':v>=ok?'warn':'bad'}
+
+/* ===================== UI ===================== */
+const SAVE_KEY='right-time-railway-v1';
+let S=null;
+const ui={tab:'map',sheet:null,confirm:null,fleetF:'all',shopF:'all',pickOp:'swr',modalQ:[],modal:null,acc:0,last:0,ptr:false,dirty:true,boardT:0,toastT:0,lastCall:''};
+const $=s=>document.querySelector(s);
+const main=$('#main');
+
+EMIT={modal:m=>{ui.modalQ.push(m);showModal()},toast:t=>toast(t)};
+
+function save(){try{if(S)localStorage.setItem(SAVE_KEY,JSON.stringify(S));else localStorage.removeItem(SAVE_KEY)}catch(e){}}
+function load(){try{const t=localStorage.getItem(SAVE_KEY);if(t){const s=JSON.parse(t);if(s&&s.v===1&&OPS[s.op])return s}}catch(e){}return null}
+
+function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(ui.toastT);ui.toastT=setTimeout(()=>el.hidden=true,2600)}
+
+function paused(){return !S||S.over||S.speed===0||!!ui.modal||document.hidden}
+
+/* ---------- top + tabs ---------- */
+const ICONS={
+ hq:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4M7 8h3M7 12h6M14 8h3"/></svg>',
+ routes:'<svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8"/><path d="M11 22h6"/></svg>',
+ fleet:'<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9.5" cy="14" r=".6"/><circle cx="14.5" cy="14" r=".6"/></svg>',
+ shop:'<svg viewBox="0 0 24 24"><path d="M3 7h18l-1.5 11a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7z"/><path d="M8 7a4 4 0 0 1 8 0M12 11v5M9.5 13.5h5"/></svg>',
+ map:'<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>',
+ office:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4M7 8h3M7 12h6M14 8h3"/></svg>',
+ more:'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>',
+};
+const TABN={map:'Map',routes:'Routes',fleet:'Fleet',shop:'Buy',office:'Office'};
+function renderTabs(){
+  const down=S.units.filter(u=>u.st==='depot').length;
+  $('#tabs-in').innerHTML=Object.keys(TABN).map(k=>`<button data-a="tab" data-v="${k}" class="${ui.tab===k?'on':''}" aria-label="${TABN[k]}">${ICONS[k]}<span>${TABN[k]}${k==='fleet'&&down?`<span class="badge">${down}</span>`:''}</span></button>`).join('');
+}
+function renderTop(){
+  const op=OPS[S.op],l=S.last;
+  const prof=l?l.profit:0;
+  $('#top').innerHTML=`
+   <div class="top-row"><div class="opname"><span class="chip-dot" style="background:${op.accent}"></span><b>${op.short}</b><span class="mute">${op.name}</span></div>
+     <div class="grade-wrap"><span class="warns" title="DfT warnings">${[0,1,2].map(i=>`<i class="${i<S.strikes?'on':''}"></i>`).join('')}</span><span class="grade" title="Operator rating">${grade(S)}</span></div></div>
+   <div class="top-row"><div class="cash num ${S.cash<0?'bad':''}">${money(S.cash)}<small class="${prof>=0?'good':'bad'}">${l?(prof>=0?'+':'')+money(prof)+'/day':''}</small></div>
+     <div class="speed" role="group" aria-label="Game speed">${[[0,'II'],[1,'1×'],[2,'2×'],[4,'4×']].map(([v,t])=>`<button data-a="speed" data-v="${v}" class="${S.speed===v?'on':''}" aria-label="${v?'Speed '+t:'Pause'}">${t}</button>`).join('')}</div></div>
+   <div class="date num">${fmtDate(S.day)} · ${periodLabel(S.day)}</div>
+   <div class="dayprog"><i id="dayprog"></i></div>`;
+}
+
+/* ---------- chooser ---------- */
+function renderChooser(){
+  const op=OPS[ui.pickOp];
+  const fleet={};op.fleet.forEach(([r,c,n])=>fleet[c]=(fleet[c]||0)+n);
+  main.innerHTML=`
+  <section class="hero"><h1>RIGHT TIME<br>RAILWAY</h1><p>Pick a train operating company, buy the trains, keep them on time, and don't give the Department for Transport an excuse.</p></section>
+  <section class="board" aria-label="Choose an operator">
+    <div class="board-head"><span>OPERATORS</span><span>${hhmm(new Date().getHours()*60+new Date().getMinutes())}</span></div>
+    ${Object.values(OPS).map(o=>`<div class="brow"><span>${o.short}</span><span>${o.name}</span><span></span><span class="st">${o.diff}</span></div>`).join('')}
+  </section>
+  <section class="ops">${Object.values(OPS).map(o=>`
+    <button class="op ${o.id===ui.pickOp?'on':''}" data-a="pickop" data-v="${o.id}"><span class="code">${o.short}</span><span><b>${o.name}</b><small>${o.region}</small></span><span class="diff ${o.diff==='Easy'?'good':o.diff==='Hard'?'bad':'warn'}">${o.diff}</span></button>`).join('')}
+  </section>
+  <section class="panel sec">
+    <h2>${op.name}</h2>
+    <p style="margin:0">${op.blurb}</p>
+    <div class="stats">
+      <div class="stat"><span class="k">Cash</span><span class="v">£${op.cash}m</span></div>
+      <div class="stat"><span class="k">Routes</span><span class="v">${op.routes.length}</span></div>
+      <div class="stat"><span class="k">Units</span><span class="v">${op.fleet.reduce((a,f)=>a+f[2],0)}</span></div>
+      <div class="stat"><span class="k">PPM target</span><span class="v">${op.target}%</span></div>
+    </div>
+    <div class="meta">${Object.entries(fleet).map(([c,n])=>`<span class="tag plain">${n}× Class ${c}</span>`).join('')}</div>
+    <div class="btns"><button class="btn" data-a="start">Take the keys<small>Start as ${op.short}</small></button></div>
+  </section>
+  <p class="mute" style="font-size:12.5px;margin:0">Unofficial fan game. Not affiliated with any train operator, Network Rail or the DfT. Figures are approximate and made up for fun.</p>`;
+}
+
+/* ---------- HQ ---------- */
+function renderOffice(){
+  const op=OPS[S.op];
+  main.innerHTML=`
+  <section class="board" aria-label="Departure board">
+    <div class="board-head"><span>${op.hub.toUpperCase()}</span><span id="bclock">05:00</span></div>
+    <div id="brows"></div>
+    <div class="calling"><span class="marquee" id="bcall"></span></div>
+  </section>
+  <section class="kpis" id="kpis"></section>
+  <section class="sec"><h2>Control log</h2><div class="panel log" id="log"></div></section>`+moreHTML();
+  ui.lastCall='';
+  updateHQ();
+}
+function updateHQ(){
+  const op=OPS[S.op],P=S.period,l=S.last;
+  const ppm=P.n?P.ppm/P.n:(l?l.ppm:null), sat=P.n?P.sat/P.n:(l?l.sat:null);
+  const pprof=P.rev-P.cost;
+  $('#kpis').innerHTML=`
+   <div class="kpi"><span class="k">PPM this period</span><span class="v ${ppm==null?'':tone(ppm,op.target,op.target-6)}">${ppm==null?'—':ppm.toFixed(1)+'%'}</span><span class="s">Target ${op.target}%</span></div>
+   <div class="kpi"><span class="k">Satisfaction</span><span class="v ${sat==null?'':tone(sat,70,50)}">${sat==null?'—':Math.round(sat)+'%'}</span><span class="s">Below 50% earns a warning</span></div>
+   <div class="kpi"><span class="k">Yesterday</span><span class="v ${l&&l.profit<0?'bad':''}">${l?money(l.profit):'—'}</span><span class="s">${l?Math.round(l.pax).toLocaleString('en-GB')+' passengers':'Day one'}</span></div>
+   <div class="kpi"><span class="k">Period profit</span><span class="v ${pprof<0?'bad':''}">${P.n?money(pprof):'—'}</span><span class="s">${28-(S.day%28)} days to DfT review</span></div>`;
+  if($('#strips'))$('#strips').innerHTML=openRoutes(S).map(r=>{
+    const us=routeUnits(S,r,true);
+    const act=us.filter(u=>u.st==='active'),down=us.filter(u=>u.st!=='active');
+    const tt=act.length?tripH(C[act[0].cls],r):1;
+    return `<button class="strip ${act.length?'':'idle'}" data-a="route" data-v="${r.id}" aria-label="${r.from} to ${r.to}, ${act.length} units"><span class="code">${r.fc}</span><span class="track">${act.map((u,i)=>`<i class="pip" data-tt="${tripH(C[u.cls],r)}" data-o="${i/act.length*2}"></i>`).join('')}${down.map(u=>`<i class="pip down" style="left:${15+hash(u.id)%70}%"></i>`).join('')}</span><span class="code">${r.tc}</span></button>`}).join('');
+  ui.pips=[...document.querySelectorAll('#strips .pip:not(.down)')];
+  $('#log').innerHTML=S.news.slice(0,10).map(n=>{const d=dateOf(n.day);return `<div><time>${d.getUTCDate()} ${MON[d.getUTCMonth()]}</time><span class="${n.tone}">${n.text}</span></div>`}).join('');
+  ui.boardT=0; updateBoard();
+}
+function boardRows(){
+  const clock=300+ui.frac*1140;const rows=[];
+  for(const r of openRoutes(S)){
+    const act=routeUnits(S,r);if(!act.length)continue;
+    const trips=act.reduce((a,u)=>a+tripsPerDay(C[u.cls],r),0);
+    const hw=Math.max(4,Math.floor(1140/Math.max(1,trips/2)));
+    const first=300+hash(r.id)%hw;
+    const k=Math.max(0,Math.ceil((clock-first)/hw));
+    for(let j=0;j<3;j++){const t=first+(k+j)*hw;if(t<1440)rows.push({t,r})}
+  }
+  rows.sort((a,b)=>a.t-b.t);
+  return rows.slice(0,5).map(({t,r})=>{
+    const h=hash(r.id+'|'+S.day+'|'+t)%1000/10, p=r.ppm||90;
+    const st=h<p?'On time':h<p+(100-p)*.85?'Exp '+hhmm(t+3+hash(r.id+t)%22):'Cancelled';
+    return {t,r,st,plat:1+hash(r.id)%OPS[S.op].plats};
+  });
+}
+function updateBoard(){
+  const el=$('#brows');if(!el)return;
+  $('#bclock').textContent=hhmm(300+ui.frac*1140);
+  const rows=boardRows();
+  el.innerHTML=rows.length?rows.map(x=>`<div class="brow"><span>${hhmm(x.t)}</span><span>${x.r.to}</span><span>${x.plat}</span><span class="st">${x.st}</span></div>`).join(''):`<div class="brow empty">${ui.frac>.98?'Services have finished for today':'No trains in service. Assign some in Routes.'}</div>`;
+  const first=rows[0];const txt=first?`Calling at: ${first.r.calls.join(', ')}${first.r.calls[0]==='Non-stop'?'':' and '+first.r.to}.  ${first.r.label||''}`:'Please listen for announcements.';
+  if(txt!==ui.lastCall){ui.lastCall=txt;$('#bcall').textContent=txt}
+}
+
+/* ---------- Routes ---------- */
+function routeCard(r){
+  const t=r.t,us=routeUnits(S,r,true),act=us.filter(u=>u.st==='active');
+  const load=t?t.load:0;
+  const tags=[`<span class="tag plain">${r.label||KIND[r.kind]}</span>`,`<span>${r.mi} mi · ${r.mph} mph line</span>`];
+  if(!act.length)tags.push('<span class="tag bad">No service</span>');
+  else if(load>1.15)tags.push('<span class="tag bad">Overcrowded</span>');
+  else if(load>1)tags.push('<span class="tag warn">Standing room only</span>');
+  if(r.fare!==1)tags.push(`<span class="tag plain">Fares ${r.fare>1?'+':''}${Math.round((r.fare-1)*100)}%</span>`);
+  const prof=t?t.rev-t.cost:0;
+  return `<button class="card" data-a="route" data-v="${r.id}">
+    <div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div>
+    <div class="meta">${tags.join('')}</div>
+    <div class="stats">
+      <div class="stat"><span class="k">Units</span><span class="v">${act.length}${us.length>act.length?`<span class="bad" style="font-size:13px"> +${us.length-act.length} down</span>`:''}</span></div>
+      <div class="stat"><span class="k">PPM</span><span class="v ${t&&act.length?tone(t.ppm,OPS[S.op].target,OPS[S.op].target-8):''}">${t&&act.length?Math.round(t.ppm)+'%':'—'}</span></div>
+      <div class="stat"><span class="k">Happy</span><span class="v ${tone(r.sat,70,50)}">${Math.round(r.sat)}%</span></div>
+      <div class="stat"><span class="k">Profit/day</span><span class="v ${prof<0?'bad':''}">${t?money(prof):'—'}</span></div>
+    </div>
+    <div><div class="row" style="font-size:12.5px;margin-bottom:4px"><span class="mute">Seats filled</span><span class="num">${t?Math.round(load*100)+'%':'—'}</span></div>
+    <div class="bar"><i class="${load>1.15?'bad':load>1?'warn':''}" style="width:${Math.min(100,load/1.5*100)}%"></i><span class="mark" style="left:${100/1.5}%"></span></div></div>
+  </button>`;
+}
+function renderRoutes(){
+  const open=openRoutes(S),locked=S.routes.filter(r=>!r.open);
+  main.innerHTML=`<section class="sec"><div class="sec-head"><h2>Your routes</h2><span class="mute" style="font-size:13px">Tap to manage</span></div><div class="list">${open.map(routeCard).join('')}</div></section>
+  ${locked.length?`<section class="sec"><h2>Bid for new services</h2><div class="list">${locked.map(r=>`
+   <div class="card"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div>
+   <div class="meta"><span class="tag plain">${KIND[r.kind]}</span><span>${r.mi} mi · about ${r.demand.toLocaleString('en-GB')} journeys a day</span></div>
+   <p class="calls" style="margin:0">Via ${r.calls.join(', ')}</p>
+   <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m · you'll need trains for it</small></button></div></div>`).join('')}</div></section>`:''}`;
+}
+function routeSheet(r){
+  const t=r.t,us=routeUnits(S,r,true),op=OPS[S.op];
+  const depot=S.units.filter(u=>u.st==='depot'||(u.st!=='order'&&!u.route));
+  const fits=depot.filter(u=>u.st==='depot');
+  return `
+  <div class="sheet-head"><div><div class="kicker">${r.label||KIND[r.kind]}</div><h3 class="rt-title" style="font-size:22px"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></h3></div><button class="x" data-a="close" aria-label="Close">✕</button></div>
+  <p class="calls" style="margin:0">Calling at ${r.calls.join(', ')}. ${r.mi} miles, line speed ${r.mph} mph.</p>
+  <div class="stats">
+    <div class="stat"><span class="k">Demand</span><span class="v">${t?Math.round(t.dem).toLocaleString('en-GB'):'—'}</span></div>
+    <div class="stat"><span class="k">Carried</span><span class="v">${t?Math.round(t.carried).toLocaleString('en-GB'):'—'}</span></div>
+    <div class="stat"><span class="k">Seats/day</span><span class="v">${t?Math.round(t.seatCap).toLocaleString('en-GB'):'—'}</span></div>
+    <div class="stat"><span class="k">Comfort</span><span class="v">${t&&t.comfort?stars(t.comfort):'—'}</span></div>
+  </div>
+  ${t&&t.dem>t.cap+1?`<p class="bad" style="margin:0;font-size:14px">${Math.round(t.dem-t.cap).toLocaleString('en-GB')} people couldn't fit on a train yesterday.</p>`:''}
+  <div class="sec">
+    <div class="row"><span class="subhead">Fares</span><span class="num" id="farelbl">${fareLabel(r)}</span></div>
+    <input type="range" id="fare-${r.id}" min="0.7" max="1.5" step="0.05" value="${r.fare}" data-r="${r.id}" aria-label="Fare level">
+    <div class="row mute" style="font-size:12.5px"><span>Cheaper: more riders, happier</span><span>Dearer: more cash, grumpier</span></div>
+  </div>
+  <div class="sec"><div class="row"><span class="subhead">Units on this route (${us.length})</span></div>
+    <div>${us.length?us.map(u=>`<div class="mini"><span><span class="no">${unitName(u)}</span> <span class="mute">${C[u.cls].name}</span>${u.st!=='active'?` <span class="tag ${u.st==='repair'?'bad':'warn'}">${u.st==='repair'?'Repair':'Refurb'} ${u.days}d</span>`:''}</span><button class="btn ghost sm" data-a="unassign" data-v="${u.id}">To depot</button></div>`).join(''):'<p class="bad" style="margin:0">No trains. Every day without a service drags your PPM down.</p>'}</div></div>
+  <div class="sec"><div class="row"><span class="subhead">Spare in the depot</span></div>
+    <div>${fits.length?fits.map(u=>`<div class="mini"><span><span class="no">${unitName(u)}</span> <span class="mute">${C[u.cls].name} · ${Math.round(u.rel*100)}% reliable</span></span><button class="btn sm" data-a="assign" data-v="${u.id}|${r.id}">Assign</button></div>`).join(''):'<p class="mute" style="margin:0">No spare trains in the depot.</p>'}</div>
+    <div class="btns"><button class="btn ghost" data-a="shopfor" data-v="${r.id}">Buy trains for this route<small>They'll go straight onto this line</small></button></div></div>`;
+}
+function fareLabel(r){return `${r.fare===1?'Standard':(r.fare>1?'+':'')+Math.round((r.fare-1)*100)+'%'} · avg £${(baseFare(r)*r.fare).toFixed(2)}`}
+
+/* ---------- Fleet ---------- */
+function unitRow(u){
+  const c=C[u.cls],r=u.route?routeOf(S,u.route):null;
+  const where=u.st==='order'?`<span class="warn">On order · ${u.days} days</span>`:u.st==='repair'?`<span class="bad">Under repair · ${u.days}d</span>`:u.st==='refurb'?`<span class="warn">Refurbishing · ${u.days}d</span>`:r?`${r.fc} – ${r.tc} <span class="mute">${r.to}</span>`:'<span class="warn">Spare in depot</span>';
+  return `<button class="unit" data-a="unit" data-v="${u.id}"><span class="no">${unitName(u)}</span><span class="where">${where}</span><span class="rel ${u.st==='order'?'mute':tone(u.rel,.9,.82)}">${u.st==='order'?'NEW':Math.round(u.rel*100)+'%'}</span></button>`;
+}
+function renderFleet(){
+  const seg=`<div class="filters"><button data-a="fleetv" data-v="list" class="${ui.fleetView!=='yard'?'on':''}">Trains</button><button data-a="fleetv" data-v="yard" class="${ui.fleetView==='yard'?'on':''}">Coupling yard</button></div>`;
+  if(ui.fleetView==='yard'){main.innerHTML=`<section class="sec"><div class="sec-head"><h2>Coupling yard</h2><span class="mute" style="font-size:13px">Cash ${money(S.cash)}</span></div>${seg}<p class="yhint">Drag a middle carriage onto another train of the same class to make it longer, or into the siding to keep it spare. Need more? Buy single carriages for any class you run. Driving cars stay put; 2 to 12 carriages per train.</p></section>${yardHTML()}`;return}
+  renderFleetList();main.insertAdjacentHTML('afterbegin',`<section class="sec">${seg}</section>`);
+}
+function renderFleetList(){
+  const f=ui.fleetF;
+  const list=S.units.filter(u=>f==='all'?true:f==='depot'?u.st==='depot':f==='down'?(u.st==='repair'||u.st==='refurb'):u.st==='order');
+  const byC={};list.forEach(u=>(byC[u.cls]=byC[u.cls]||[]).push(u));
+  const cnt=k=>S.units.filter(u=>k==='depot'?u.st==='depot':k==='down'?(u.st==='repair'||u.st==='refurb'):u.st==='order').length;
+  main.innerHTML=`
+  <section class="sec"><div class="sec-head"><h2>Fleet · ${S.units.filter(u=>u.st!=='order').length} units</h2><span class="mute" style="font-size:13px">Right column: reliability</span></div>
+  <div class="filters">${[['all','All'],['depot','Spare ('+cnt('depot')+')'],['down','Out of service ('+cnt('down')+')'],['order','On order ('+cnt('order')+')']].map(([k,t])=>`<button data-a="fleetf" data-v="${k}" class="${f===k?'on':''}">${t}</button>`).join('')}</div></section>
+  ${Object.keys(byC).length?Object.keys(byC).sort((a,b)=>+a-+b).map(k=>`<section class="sec"><div class="group-head"><span>Class ${k} ${C[k].name}</span><span class="mute" style="font-size:13px;font-weight:500">${C[k].seats} seats · ${C[k].mph} mph</span></div><div class="list">${byC[k].sort((a,b)=>a.n-b.n).map(unitRow).join('')}</div></section>`).join(''):`<p class="mute">Nothing here.</p>`}`;
+}
+function sellValue(u){const c=C[u.cls];const base=(c.newPrice?c.newPrice*.55:c.usedPrice*.75)*1e6*carsN(u)/c.cars;return Math.round(base*clamp(1-ageOf(S,u)*.025,.15,1)*(.6+u.rel*.4)/1000)*1000}
+function refurbCost(u){const c=C[u.cls];return Math.round(((c.newPrice||c.usedPrice*3)*.12+.2)*1e6/1000)*1000}
+function unitSheet(u){
+  const c=C[u.cls],r=u.route?routeOf(S,u.route):null;
+  const fits=openRoutes(S);
+  const sv=sellValue(u),rc=refurbCost(u);
+  const busy=u.st==='order'||u.st==='repair'||u.st==='refurb';
+  return `
+  <div class="sheet-head"><div><div class="kicker">Class ${c.id} ${c.name} · ${c.builder}</div><h3 class="cls-no" style="font-size:30px">${unitName(u)}</h3></div><button class="x" data-a="close" aria-label="Close">✕</button></div>
+  <div class="meta"><span>${carsN(u)} cars · ${seatsOf(u)} seats · ${c.mph} mph</span></div>
+  <div class="stats">
+    <div class="stat"><span class="k">Built</span><span class="v">${u.built}</span></div>
+    <div class="stat"><span class="k">Reliability</span><span class="v ${tone(u.rel,.9,.82)}">${u.st==='order'?'—':Math.round(u.rel*100)+'%'}</span></div>
+    <div class="stat"><span class="k">Comfort</span><span class="v">${stars(Math.min(5,c.comfort+u.cb))}</span></div>
+    <div class="stat"><span class="k">Miles</span><span class="v">${Math.round(u.miles/1000)}k</span></div>
+  </div>
+  <p style="margin:0">${u.st==='order'?`Being built. Arrives in ${u.days} days${r?` and goes straight onto ${r.from} – ${r.to}`:''}.`:u.st==='repair'?`In the depot being fixed. Back in ${u.days} days.`:u.st==='refurb'?`Being refurbished. Back in ${u.days} days.`:r?`Running ${r.from} – ${r.to}, ${tripsPerDay(c,r)} trips a day.`:'Sitting in the depot costing money.'}</p>
+  <div class="sec"><span class="subhead">${u.st==='order'?'Send it to':'Assign to'}</span>
+    <div>${fits.map(x=>`<div class="mini"><span>${x.fc} – ${x.tc} <span class="mute">${x.to} · ${tripsPerDay(c,x)} trips/day</span></span>${u.route===x.id?'<span class="tag good">Here</span>':`<button class="btn sm ${u.route?'ghost':''}" data-a="assign" data-v="${u.id}|${x.id}">Move here</button>`}</div>`).join('')}
+    ${u.route&&u.st!=='order'?`<div class="mini"><span class="mute">Take out of service</span><button class="btn ghost sm" data-a="unassign" data-v="${u.id}">To depot</button></div>`:''}</div></div>
+  ${u.st!=='order'?`<div class="btns">
+    <button class="btn ghost" data-a="refurb" data-v="${u.id}" ${busy||S.cash<rc||u.cb>=1?'disabled':''}>Refurbish<small>${u.cb>=1?'Already done twice':`${money(rc)} · 14 days · better seats and reliability`}</small></button>
+    ${ui.confirm==='sell:'+u.id?`<button class="btn danger" data-a="sell" data-v="${u.id}">Confirm sale<small>${money(sv)}</small></button>`:`<button class="btn ghost" data-a="confirm" data-v="sell:${u.id}" ${u.st==='repair'||u.st==='refurb'?'disabled':''}>Sell<small>${money(sv)}</small></button>`}
+  </div>`:''}`;
+}
+
+/* ---------- Shop ---------- */
+function renderShop(){
+  const f=ui.shopF, open=openRoutes(S);
+  const fr=f.startsWith('route:')?routeOf(S,f.slice(6)):null;
+  let list=Object.values(C);
+  if(f==='new')list=list.filter(c=>c.newPrice);
+  else if(f==='used')list=list.filter(c=>c.usedPrice);
+  list.sort((a,b)=>(a.newPrice?0:1)-(b.newPrice?0:1)||+a.id-+b.id);
+  main.innerHTML=`
+  <section class="sec"><div class="sec-head"><h2>Rolling stock</h2><span class="mute num" style="font-size:13px">Cash ${money(S.cash)}</span></div>
+   <div class="filters">${fr?`<button class="on" data-a="shopf" data-v="all">For ${fr.fc} – ${fr.tc} ✕</button>`:''}${[['all','All trains'],['new','New build'],['used','Second-hand']].map(([k,t])=>`<button data-a="shopf" data-v="${k}" class="${f===k?'on':''}">${t}</button>`).join('')}</div>
+   <p class="mute" style="margin:0;font-size:13.5px">New trains take months to build. Second-hand units arrive tomorrow, but they're older and fail more often.</p></section>
+  <div class="list">${list.map(c=>{
+    const np=c.newPrice*1e6,up=c.usedPrice*1e6;
+    return `<div class="card">
+      <div class="cls-head"><div class="cls-name">${c.name}<small>${c.builder} · from ${c.year}</small></div><span class="cls-no">${c.id}</span></div>
+      ${sideView(c.id,S.op)}
+      <div class="meta"><span>${c.cars} cars · ${c.seats} seats · ${c.mph} mph</span>${stars(c.comfort)}</div>
+      <p class="blurb">${c.blurb}</p>
+      <p class="calls" style="margin:0">Reliability ${Math.round(c.rel*100)}% when new${c.stand>=1.6?' · built for crowds':''}${c.mph>=125?' · fast':''}</p>
+      <div class="btns">
+       ${c.newPrice?`<button class="btn" data-a="buynew" data-v="${c.id}" ${S.cash<np?'disabled':''}>Order new · ${money(np)}<small>Arrives in about ${c.deliv} days</small></button>`:''}
+       ${c.usedPrice?`<button class="btn ${c.newPrice?'ghost':''}" data-a="buyused" data-v="${c.id}" ${S.cash<up?'disabled':''}>Second-hand · ${money(up)}<small>Ready tomorrow</small></button>`:''}
+      </div></div>`}).join('')}</div>`;
+}
+
+/* ---------- Map ---------- */
+const LIV={
+ swr:{body:'#1d3f7a',stripe:'#9fc0e3',skirt:'#0f2347'},
+ southern:{body:'#eeeeea',stripe:'#1f6e3a',skirt:'#86c440'},
+ gwr:{body:'#0e4733',stripe:'#d4b24c',skirt:'#082a1f'},
+ lner:{body:'#e6e7ea',stripe:'#cf1f3f',skirt:'#555a62'},
+ avanti:{body:'#2b3b42',stripe:'#25b5a5',skirt:'#182328'},
+ northern:{body:'#2b2f6e',stripe:'#e8e8f2',skirt:'#6d3b98'},
+ scotrail:{body:'#22408f',stripe:'#ffffff',skirt:'#142a63'},
+ merseyrail:{body:'#f2c500',stripe:'#3c3c3c',skirt:'#3c3c3c'},
+};
+// class -> nose at front, nose at rear, car length (px at 1x), doors per car side, window style, pantograph, power-pack car
+const MODEL={};
+[
+ ['142','flat','flat',6.5,2,'big',0],['150','flat','flat',8,2,'big',0],['156','flat','flat',8.5,2,'big',0],
+ ['158','round','round',8.5,2,'small',0],['159','round','round',8.5,2,'small',0],['165','flat','flat',8.5,2,'big',0],
+ ['170','slope','slope',8.5,2,'small',0],['195','slope','slope',9,2,'big',0],['220','pointy','pointy',9,1,'small',0],
+ ['43','hst','hst',9.5,2,'small',0],['91','wedge','flat',9.5,2,'small',1],['331','slope','slope',9,2,'big',1],
+ ['345','slope','slope',9,3,'big',1],['357','round','round',8.5,2,'big',1],['377','round','round',8.5,2,'big',0],
+ ['380','slope','slope',9,2,'big',1],['385','slope','slope',9,2,'big',1],['387','round','round',8.5,2,'big',1],
+ ['390','bullet','bullet',9.5,1,'small',1],['397','pointy','pointy',9.5,1,'small',1],['444','round','round',9.5,2,'small',0],
+ ['450','round','round',8.5,2,'big',0],['455','flat','flat',8.5,2,'big',0],['484','tube','tube',7.5,3,'big',0],
+ ['700','slope','slope',8.5,2,'big',1],['701','slope','slope',8.5,2,'big',0],['720','slope','slope',9,2,'big',1],
+ ['745','pointy','pointy',8.5,1,'small',1],['755','slope','slope',8.5,2,'big',1,1],['777','slope','slope',8,2,'big',0],
+ ['800','long','long',10,1,'small',1],['805','long','long',10,1,'small',1],['807','long','long',10,1,'small',1],['810','long','long',10,1,'small',1],
+].forEach(a=>MODEL[a[0]]={nose:a[1],rear:a[2],len:a[3],doors:a[4],win:a[5],pan:!!a[6],pp:!!a[7]});
+function carsOfUnit(u){return carsOf(u.cls,carsN(u))}
+function carsOf(cls,n){n=n||C[cls].cars;const a=[];for(let i=0;i<n;i++)a.push(i===0?'F':i===n-1?'R':'M');if(MODEL[cls].pp)a.splice(Math.floor(n/2),0,'P');return a}
+
+/* top-down car sprites: local length 10 (x -5..5), width 4.4, nose pointing +x */
+const NOSE_TOP={
+ flat:['M-4.85-2.2H4.5Q5-2.2 5-1.7V1.7Q5 2.2 4.5 2.2H-4.85Z','M4-2.2H4.5Q5-2.2 5-1.7V1.7Q5 2.2 4.5 2.2H4Z',3.6],
+ tube:['M-4.85-2.2H3.9Q5-2.2 5-1.1V1.1Q5 2.2 3.9 2.2H-4.85Z','M3.9-2.2Q5-2.2 5-1.1V1.1Q5 2.2 3.9 2.2Z',3.4],
+ round:['M-4.85-2.2H3.2Q5-2.2 5 0Q5 2.2 3.2 2.2H-4.85Z','M3.5-2.15Q5-2 5 0Q5 2 3.5 2.15Z',3],
+ slope:['M-4.85-2.2H3Q5.1-1.6 5.1 0Q5.1 1.6 3 2.2H-4.85Z','M3.6-2Q5.1-1.4 5.1 0Q5.1 1.4 3.6 2Z',3],
+ pointy:['M-4.85-2.2H1.8Q4.4-1.6 5.3 0Q4.4 1.6 1.8 2.2H-4.85Z','M3-1.75Q4.4-1.2 5.3 0Q4.4 1.2 3 1.75Z',2],
+ bullet:['M-4.85-2.2H1.2Q4.2-1.9 5.4 0Q4.2 1.9 1.2 2.2H-4.85Z','M3.4-1.3Q4.6-.8 5.4 0Q4.6.8 3.4 1.3Z',1.5],
+ long:['M-4.85-2.2H.5Q4-2 5.6 0Q4 2 .5 2.2H-4.85Z','M3.6-1.2Q4.9-.6 5.6 0Q4.9.6 3.6 1.2Z',.8],
+ hst:['M-4.85-2.2H2.4L5.3-.7V.7L2.4 2.2H-4.85Z','M3.6-1.5L5.3-.7V.7L3.6 1.5Z',2],
+ wedge:['M-4.85-2.2H3L5.2-1V1L3 2.2H-4.85Z','M4-1.6L5.2-1V1L4 1.6Z',2.6],
+};
+function topDefs(L){
+  const edge='#06090d';
+  let h=`<g id="car-M"><rect x="-4.85" y="-2.2" width="9.7" height="4.4" rx=".8" fill="${L.body}" stroke="${edge}" stroke-width=".4"/><rect x="-4.2" y="-.45" width="8.4" height=".9" fill="${L.stripe}"/></g>`;
+  h+=`<g id="car-P"><rect x="-4.85" y="-1.9" width="9.7" height="3.8" rx=".6" fill="#5b6169" stroke="${edge}" stroke-width=".4"/><path d="M-3-1.1V1.1M-1-1.1V1.1M1-1.1V1.1M3-1.1V1.1" stroke="#2c3138" stroke-width=".7"/></g>`;
+  for(const [k,[b,y,e]] of Object.entries(NOSE_TOP))h+=`<g id="car-${k}"><path d="${b}" fill="${L.body}" stroke="${edge}" stroke-width=".4"/><rect x="-4.2" y="-.45" width="${e+4.2}" height=".9" fill="${L.stripe}"/><path d="${y}" fill="#ffd200"/></g>`;
+  return `<defs>${h}</defs>`;
+}
+
+/* side-view drawing for the train card */
+const NOSE_SIDE={
+ flat:w=>[`M0 12H${w-2}Q${w} 12 ${w} 14V50H0Z`,6],
+ tube:w=>[`M0 12H${w-5}Q${w} 12 ${w} 17V50H0Z`,6],
+ round:w=>[`M0 12H${w-10}Q${w} 12 ${w} 24V50H0Z`,10],
+ slope:w=>[`M0 12H${w-13}L${w} 27V50H0Z`,12],
+ pointy:w=>[`M0 12H${w-22}Q${w-4} 15 ${w} 36V50H0Z`,16],
+ bullet:w=>[`M0 12H${w-24}Q${w-2} 13 ${w} 37Q${w} 50 ${w-5} 50H0Z`,15],
+ long:w=>[`M0 12H${w-32}Q${w-4} 15 ${w} 40V50H0Z`,20],
+ hst:w=>[`M0 12H${w-17}L${w-3} 30L${w} 42V50H0Z`,13],
+ wedge:w=>[`M0 12H${w-15}L${w} 33V50H0Z`,12],
+};
+let sideId=0;
+function sideCar(type,cls,L,w,x,pan){
+  const m=MODEL[cls],id='sc'+(sideId++);
+  const nose=type==='F'?m.nose:type==='R'?m.rear:null;
+  const [d,yw]=nose?NOSE_SIDE[nose](w):[`M1 12H${w-1}Q${w} 12 ${w} 13V50H0V13Q0 12 1 12Z`,0];
+  const loco=(cls==='43'&&nose)||(cls==='91'&&type==='F');
+  let g=`<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">`;
+  if(type==='P'){
+    g+=`<rect width="${w}" height="60" fill="#5b6169"/>`;
+    for(let i=0;i<4;i++)g+=`<rect x="${4+i*(w-8)/4}" y="18" width="${(w-8)/4-3}" height="20" fill="#3a3f46"/>`;
+  } else {
+    g+=`<rect width="${w}" height="60" fill="${L.body}"/><rect y="34" width="${w}" height="4" fill="${L.stripe}"/><rect y="44" width="${w}" height="6" fill="${L.skirt}"/>`;
+    const x0=4,x1=w-(nose?yw+5:4);
+    if(loco){for(let i=0;i<5;i++)g+=`<rect x="${x0+6+i*5}" y="18" width="2.5" height="14" fill="rgba(0,0,0,.35)"/>`}
+    else{
+      const big=m.win==='big',k=Math.max(big?2:3,Math.round((x1-x0)/(big?15:8)));
+      for(let i=0;i<k;i++){const ww=(x1-x0)/k;g+=`<rect x="${x0+i*ww+1}" y="19" width="${ww-2.4}" height="${big?11:8}" rx="1.5" fill="#18212b"/>`}
+      const n=m.doors;for(let j=0;j<n;j++){const dx=n===1?(j?x1-9:x0+2):x0+4+j*((x1-x0-14)/(n-1));
+        g+=`<rect x="${dx}" y="16" width="8" height="33" rx="1" fill="rgba(0,0,0,.16)" stroke="rgba(0,0,0,.4)" stroke-width=".8"/><rect x="${dx+2}" y="19" width="4" height="9" rx="1" fill="#18212b"/>`}
+    }
+    if(nose)g+=`<rect x="${w-yw-3}" y="15" width="${yw+6}" height="11" fill="#18212b"/><rect x="${w-yw+1}" y="26" width="${yw+2}" height="24" fill="#ffd200"/>`;
+  }
+  g+='</g>';
+  g+=`<rect x="2" y="10.5" width="${w-(nose?yw+8:4)}" height="2.2" rx="1" fill="#8d96a0"/>`;
+  g+=`<rect x="${w*.06}" y="50" width="${w*.22}" height="4" fill="#20262d"/><rect x="${w*.72}" y="50" width="${w*.22}" height="4" fill="#20262d"/>`;
+  [.1,.24,.76,.9].forEach(p=>{g+=`<circle cx="${w*p}" cy="56.5" r="3.2" fill="#2b323a" stroke="#0d1013" stroke-width="1"/>`});
+  if(pan){const c=w/2;g+=`<path d="M${c-7} 10.5H${c+7}M${c-4} 10L${c+3} 4L${c-3} 1.5H${c+6}" fill="none" stroke="#c7ccd2" stroke-width="1.3" stroke-linejoin="round"/>`}
+  return `<g transform="translate(${type==='R'?x+w:x} 0)${type==='R'?' scale(-1 1)':''}">${g}</g>`;
+}
+function sideView(cls,opId,n){
+  const m=MODEL[cls],L=LIV[opId],all=carsOf(cls,n);
+  let show=all,gap=false;
+  if(all.length>4){show=m.pp?all:['F','M','M','R'];gap=!m.pp}
+  const ratio=t=>t==='P'?.5:1,G=3,E=gap?16:0;
+  const unit=(320-G*(show.length-1)-E)/show.reduce((a,t)=>a+ratio(t),0);
+  let x=0,h='';
+  const panAt=show.length>1?1:0;
+  show.forEach((t,i)=>{const w=unit*ratio(t);h+=sideCar(t,cls,L,w,x,m.pan&&i===panAt&&t!=='P');x+=w+G;if(gap&&i===1){h+=`<text x="${x+E/2-1.5}" y="36" text-anchor="middle" font-size="14" font-weight="700" fill="var(--mute)">…</text>`;x+=E}});
+  return `<svg class="side" viewBox="-2 0 324 62" role="img" aria-label="Class ${cls} ${C[cls].name} in ${OPS[opId].name} colours, ${all.length} vehicles"><path d="M0 60.5H320" stroke="var(--line)" stroke-width="1.5"/>${h}</svg>`;
+}
+
+/* geometry */
+const polyCache={};
+function defOf(opId,rid){const o=OPS[opId];return [...o.routes,...o.exp].find(r=>r.id===rid)}
+function routePoly(opId,rid){
+  const k=opId+':'+rid;if(polyCache[k])return polyCache[k];
+  const d=defOf(opId,rid);const pts=(d?d.geo:[]).map(n=>GEO.st[n]).filter(Boolean);
+  const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+  return polyCache[k]={pts,cum,len:cum[cum.length-1]||1,d:pts.length?'M'+pts.map(p=>p[0]+' '+p[1]).join('L'):''};
+}
+function pointDir(P,d){
+  d=clamp(d,0,P.len);let i=1;while(i<P.cum.length-1&&P.cum[i]<d)i++;
+  const a=P.pts[i-1],b=P.pts[i]||a,seg=(P.cum[i]-P.cum[i-1])||1,t=(d-P.cum[i-1])/seg;
+  return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,Math.atan2(b[1]-a[1],b[0]-a[0])*57.29578];
+}
+const pointAt=(P,f)=>pointDir(P,clamp(f,0,1)*P.len);
+function bounds(polys){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const P of polys)for(const [x,y] of P.pts){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}return [x0,y0,x1,y1]}
+function mapSize(){const el=$('#map');return el?[el.clientWidth||360,el.clientHeight||480]:[360,480]}
+function fitTo(b,pad){
+  const [cw,ch]=mapSize();let [x0,y0,x1,y1]=b;
+  const L=24+pad,Rt=64+pad,T=52+pad,B=46+pad;
+  const bw=Math.max(20,x1-x0),bh=Math.max(20,y1-y0);
+  const s=Math.max(bw/Math.max(80,cw-L-Rt),bh/Math.max(80,ch-T-B));
+  const sx=(cw-L-Rt)*s-bw,sy=(ch-T-B)*s-bh;
+  ui.vb={x:x0-L*s-sx/2,y:y0-T*s-sy/2,w:cw*s,h:ch*s};
+}
+function fitNetwork(){const ps=S.routes.filter(r=>r.open).map(r=>routePoly(S.op,r.id));fitTo(bounds(ps),10)}
+function fitGB(){fitTo([150,20,780,1120],0)}
+function sizeMap(){const w=$('#mapwrap');if(!w)return;const t=$('#top'),b=$('#tabs');w.style.height=Math.max(320,innerHeight-(t?t.offsetHeight:110)-(b?b.offsetHeight:70)-26)+'px'}
+function applyVB(){
+  const svg=$('#map');if(!svg||!ui.vb)return;const [cw,ch]=mapSize();
+  ui.vb.h=ui.vb.w*ch/cw;const v=ui.vb;svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);
+  const s=v.w/cw;if(Math.abs(s-(ui.mapS||0))>1e-6){ui.mapS=s;scaleMap();moveTrains()}else{clearTimeout(ui.lblT);ui.lblT=setTimeout(placeLabels,60)}
+}
+const carK=()=>clamp(2.1-(ui.mapS||1)*1.1,.8,1.9);
+function scaleMap(){
+  const s=ui.mapS,svg=$('#map');if(!svg)return;
+  svg.querySelectorAll('.st').forEach(e=>e.setAttribute('r',2.2*s));
+  svg.querySelectorAll('.term').forEach(e=>e.setAttribute('r',4.5*s));
+  svg.querySelectorAll('.lbl').forEach(e=>{const big=e.classList.contains('lbl-term');e.setAttribute('font-size',(big?12.5:10.5)*s);e.setAttribute('stroke-width',3.2*s)});
+  placeBubbles();
+  placeLabels();
+}
+function placeBubbles(){
+  const s=ui.mapS||1,placed=[];
+  document.querySelectorAll('#m-bubs .bub').forEach(e=>{
+    const P=routePoly(S.op,e.dataset.mr),w=+e.dataset.w;let best=null;
+    for(const f of [.34,.5,.22,.64,.42,.78,.28]){const [x,y]=pointAt(P,f),box=[x-w/2*s,y-30*s,x+w/2*s,y-6*s];
+      if(!placed.some(p=>box[0]<p[2]&&box[2]>p[0]&&box[1]<p[3]&&box[3]>p[1])){best=[x,y,box];break}}
+    if(!best){const [x,y0]=pointAt(P,.34);for(let k=1;k<12;k++){const y=y0-k*23*s,box=[x-w/2*s,y-30*s,x+w/2*s,y-6*s];if(!placed.some(p=>box[0]<p[2]&&box[2]>p[0]&&box[1]<p[3]&&box[3]>p[1])){best=[x,y,box];break}}}
+    if(!best){const [x,y]=pointAt(P,.34);best=[x,y,[x,y,x,y]]}
+    placed.push(best[2]);e.setAttribute('transform',`translate(${best[0]} ${best[1]}) scale(${s})`);
+  });
+  ui.bubBoxes=placed;
+}
+function placeLabels(){
+  const s=ui.mapS,svg=$('#map'),v=ui.vb;if(!svg||!v)return;
+  const zoomed=s<.32,placed=[],sb=svg.getBoundingClientRect();
+  document.querySelectorAll('.mapctl,.hud,.ticker').forEach(el=>{const b=el.getBoundingClientRect();if(b.width)placed.push([v.x+(b.left-sb.left-4)*s,v.y+(b.top-sb.top-4)*s,v.x+(b.right-sb.left+4)*s,v.y+(b.bottom-sb.top+4)*s])});
+  (ui.bubBoxes||[]).forEach(b=>placed.push(b));
+  const inView=b=>b[0]>v.x+4*s&&b[2]<v.x+v.w-4*s&&b[1]>v.y+4*s&&b[3]<v.y+v.h-4*s;
+  const rank=e=>(e.classList.contains('lbl-term')?0:2)+(e.classList.contains('off')?1:0);
+  const els=[...svg.querySelectorAll('.lbl')].sort((a,b)=>rank(a)-rank(b));
+  for(const e of els){
+    const call=e.classList.contains('lbl-call');if(call&&!zoomed){e.style.display='none';continue}
+    const fs=(call?10.5:12.5)*s,w=e.textContent.length*fs*.53,x=+e.dataset.x,y=+e.dataset.y,g=7*s;
+    const opts=[[x+g,y+fs*.35,'start'],[x-g,y+fs*.35,'end'],[x-w/2,y-g,'start'],[x-w/2,y+g+fs*.8,'start'],[x-g*.4,y-g,'start'],[x-g*.4,y+g+fs*.8,'start'],[x+g*.4-w,y-g,'start'],[x+g*.4-w,y+g+fs*.8,'start']];
+    let ok=null;
+    for(const [lx,ly,a] of opts){const bx=a==='end'?lx-w:lx,box=[bx,ly-fs*.85,bx+w,ly+fs*.25];
+      if(inView(box)&&!placed.some(p=>box[0]<p[2]&&box[2]>p[0]&&box[1]<p[3]&&box[3]>p[1])){ok=[lx,ly,a,box];break}}
+    if(!ok){e.style.display='none';continue}
+    e.style.display='inline';e.setAttribute('x',ok[0]);e.setAttribute('y',ok[1]);e.setAttribute('text-anchor',ok[2]);placed.push(ok[3]);
+  }
+}
+function zoomAt(f,px,py){
+  const v=ui.vb,[cw]=mapSize(),s=v.w/cw,wx=v.x+px*s,wy=v.y+py*s;
+  const w=clamp(v.w/f,14,1100),s2=w/cw;v.x=wx-px*s2;v.y=wy-py*s2;v.w=w;applyVB();
+}
+
+/* render */
+function renderMap(){
+  const others=Object.values(OPS).filter(o=>o.id!==S.op).flatMap(o=>o.routes.map(r=>routePoly(o.id,r.id).d)).join('');
+  main.innerHTML=`
+  <section class="mapwrap" id="mapwrap">
+    <svg id="map" role="img" aria-label="Map of your network. Drag to pan, pinch or scroll to zoom, tap a train or a line.">
+      ${topDefs(LIV[S.op])}
+      <rect class="sea" x="-2000" y="-2000" width="5000" height="5000"/>
+      <path class="land far" d="${GEO.fr}"/><path class="land far" d="${GEO.ie}"/><path class="land" d="${GEO.im}"/><path class="land" d="${GEO.gb}"/>
+      <path class="other" d="${others}"/>
+      <g id="m-routes"></g><g id="m-stations"></g><g id="m-labels"></g><g id="m-trains"></g><g id="m-bubs"></g><g id="m-fx"></g>
+    </svg>
+    <div class="hud" id="hud"></div>
+    <div class="mapctl"><button data-a="mz" data-v="1.6" aria-label="Zoom in">+</button><button data-a="mz" data-v="0.625" aria-label="Zoom out">−</button><button data-a="mfit" data-v="net" aria-label="Fit my network">Fit</button><button data-a="mfit" data-v="gb" aria-label="Show all of Britain">GB</button></div>
+    <div class="mapcard" id="mapcard" hidden></div>
+    <button class="ticker" data-a="tab" data-v="office" aria-label="Latest news. Open the office."><span class="marquee" id="tick"></span></button>
+  </section>`;
+  ui.mapS=0;ui.fx=[];ui.tickTxt='';ui.segs=ui.segs||{};
+  sizeMap();
+  if(!ui.vb||ui.vbOp!==S.op){ui.vbOp=S.op;fitNetwork()}
+  bindMap();updateMap();applyVB();
+}
+function updateMap(){
+  const svg=$('#map');if(!svg)return;
+  const sel=ui.mapSel||{},stn=new Map();
+  let rh='';
+  for(const r of S.routes){
+    const P=routePoly(S.op,r.id);if(!P.d)continue;
+    const act=r.open?routeUnits(S,r).length:0,load=r.t&&r.open?r.t.load:0;
+    const w=!r.open?2:clamp(3+r.demand/5000,3,8);
+    if(sel.t==='route'&&sel.id===r.id)rh+=`<path class="rl sel" d="${P.d}" style="stroke-width:${w+6}px"/>`;
+    if(r.open&&act&&load>1.05)rh+=`<path class="rl halo" d="${P.d}" style="stroke-width:${w+(load>1.2?10:7)}px"/>`;
+    rh+=`<path class="rl bed" d="${P.d}" style="stroke-width:${w+2.5}px"/><path class="rl ${!r.open?'locked':!act?'idle':'live'}" d="${P.d}" style="stroke-width:${w}px"/>`;
+    rh+=`<path class="hit" d="${P.d}" data-mr="${r.id}"/>`;
+    [r.from,r.to].forEach(n=>{if(GEO.st[n])stn.set(n,{t:1,open:r.open||(stn.get(n)||{}).open})});
+    r.calls.forEach(n=>{if(GEO.st[n]&&!stn.has(n))stn.set(n,{t:0,open:r.open})});
+  }
+  $('#m-routes').innerHTML=rh;
+  let sh='',lh='';
+  for(const [n,o] of stn){const [x,y]=GEO.st[n];
+    sh+=`<circle class="${o.t?'term':'st'}${o.open?'':' off'}" cx="${x}" cy="${y}" r="1"/>`;
+    lh+=`<text class="lbl ${o.t?'lbl-term':'lbl-call'}${o.open?'':' off'}" data-x="${x}" data-y="${y}" x="${x}" y="${y}">${n}</text>`}
+  $('#m-stations').innerHTML=sh;$('#m-labels').innerHTML=lh;
+  // trains
+  let th='';const list=[];
+  for(const r of openRoutes(S)){
+    const P=routePoly(S.op,r.id);if(!P.pts.length)continue;
+    const us=routeUnits(S,r,true),act=us.filter(u=>u.st==='active');
+    const trips=act.reduce((a,u)=>a+tripsPerDay(C[u.cls],r),0),rpt=r.t&&trips?r.t.rev/trips:0;
+    act.forEach((u,i)=>list.push({u,P,tt:tripH(C[u.cls],r),o:i/act.length*2,rpt}));
+    us.filter(u=>u.st==='repair'||u.st==='refurb').forEach(u=>list.push({u,P,down:u.st==='repair',parked:true,fixed:.12+(hash(u.id)%76)/100}));
+  }
+  for(const m of list){const md=MODEL[m.u.cls];m.cars=carsOfUnit(m.u);m.len=md.len;const isSel=sel.t==='unit'&&sel.id===m.u.id;
+    th+=`<g class="train${m.down?' down':''}${m.parked&&!m.down?' parked':''}${isSel?' sel':''}">${m.cars.map(t=>`<use href="#car-${t==='F'?md.nose:t==='R'?md.rear:t}"/>`).join('')}${m.down?'<g class="alert"><circle r="7"/><text y="4" text-anchor="middle">!</text></g>':''}</g>`}
+  $('#m-trains').innerHTML=th;
+  [...$('#m-trains').children].forEach((g,i)=>{const m=list[i];m.uses=[...g.querySelectorAll('use')];m.alert=g.querySelector('.alert')});
+  ui.mtr=list;
+  // crowd bubbles
+  let bh='';
+  for(const r of openRoutes(S)){
+    const P=routePoly(S.op,r.id);if(!P.pts.length||!r.t)continue;
+    const act=routeUnits(S,r).length;let label=null,cls='';
+    if(!act){label='No trains';cls='idle'}
+    else if(r.t.load>1.05){const left=Math.round(r.t.dem-r.t.cap);label=left>0?(left>=1000?(left/1000).toFixed(1)+'k':left)+' stuck':'Packed';}
+    if(!label)continue;
+    const [x,y]=pointAt(P,.34),w=26+label.length*6.2;
+    bh+=`<g class="bub ${cls}" data-mr="${r.id}" data-w="${w}" data-x="${x}" data-y="${y}" transform="translate(${x} ${y}) scale(${ui.mapS||1})"><rect x="${-w/2}" y="-28" width="${w}" height="20" rx="10"/><path d="M-5-9 0-2 5-9Z"/><circle cx="${-w/2+11}" cy="-21.5" r="2.6"/><path d="M${-w/2+6.5}-12.5a4.5 4.5 0 0 1 9 0Z"/><text x="${-w/2+19}" y="-14">${label}</text></g>`;
+  }
+  $('#m-bubs').innerHTML=bh;placeBubbles();
+  updateHud();
+  if(ui.mapS)scaleMap();
+  moveTrains();
+  renderMapCard();
+}
+function updateHud(){
+  const op=OPS[S.op],P=S.period,l=S.last;
+  const ppm=P.n?P.ppm/P.n:(l?l.ppm:null),sat=P.n?P.sat/P.n:(l?l.sat:null);
+  $('#hud').innerHTML=`<span class="chip"><small>On time</small><b class="${ppm==null?'':tone(ppm,op.target,op.target-6)}">${ppm==null?'—':ppm.toFixed(0)+'%'}</b></span><span class="chip"><small>Happy</small><b class="${sat==null?'':tone(sat,70,50)}">${sat==null?'—':Math.round(sat)+'%'}</b></span><span class="chip"><small>DfT review</small><b>${28-(S.day%28)}d</b></span>`;
+  const n=S.news[0];const txt=n?n.text:'';
+  if(txt!==ui.tickTxt){ui.tickTxt=txt;const t=$('#tick');if(t){t.textContent=txt;t.className='marquee '+(n?n.tone:'');t.style.animation='none';void t.offsetWidth;t.style.animation=''}}
+}
+function spawnCash(P,d,amt){
+  if(!ui.fx||ui.fx.length>=8||amt<500)return;const g=$('#m-fx');if(!g)return;
+  const now=performance.now(),key=P.d.length+':'+Math.round(d);ui.fxCd=ui.fxCd||{};if(ui.fxCd[key]>now)return;ui.fxCd[key]=now+1100;
+  const [x,y]=pointDir(P,d);const el=document.createElementNS('http://www.w3.org/2000/svg','text');
+  const s=ui.mapS||1;el.setAttribute('class','fxcash');el.setAttribute('text-anchor','middle');el.setAttribute('font-size',13*s);el.setAttribute('x',x);el.setAttribute('y',y-10*s);el.textContent='+'+money(amt);g.appendChild(el);
+  ui.fx.push({el,x,y,t0:performance.now()});
+}
+function moveTrains(){
+  if(!ui.mtr)return;
+  const s=ui.mapS||1,k=carK(),hrs=(S.day+ui.frac)*19,still=reduce.matches,live=!paused();
+  for(const m of ui.mtr){
+    if(!m.uses)continue;let f;
+    if(m.parked)f=m.fixed;
+    else if(still)f=m.o/2;
+    else{const ph=((hrs/m.tt)+m.o)%2,seg=ph<1?0:1;let x=ph%1;x=clamp((x-.06)/.88,0,1);x=x*x*(3-2*x);f=seg?1-x:x;
+      const prev=ui.segs[m.u.id];if(live&&prev!=null&&prev!==seg&&m.rpt>0)spawnCash(m.P,prev===0?m.P.len:0,m.rpt);ui.segs[m.u.id]=seg}
+    const n=m.cars.length,step=m.len*k*1.1*s;let T=step*n,sc=1;if(T>m.P.len*.9){sc=m.P.len*.9/T;T*=sc}
+    const a=f*(m.P.len-T);m.pos=[];
+    for(let i=0;i<n;i++){
+      const [x,y,ang]=pointDir(m.P,a+T-(i+.5)*step*sc),t=m.cars[i];
+      m.uses[i].setAttribute('transform',`translate(${x} ${y}) rotate(${t==='R'?ang+180:ang}) scale(${s*k*sc*m.len/10} ${s*k*sc*1.35})`);
+      m.pos.push([x,y]);
+    }
+    if(m.alert){const [x,y]=m.pos[Math.floor(n/2)];m.alert.setAttribute('transform',`translate(${x} ${y-13*s}) scale(${s})`)}
+  }
+  if(ui.fx&&ui.fx.length){const now=performance.now();
+    ui.fx=ui.fx.filter(f=>{const age=(now-f.t0)/1500;if(age>1){f.el.remove();return false}
+      f.el.setAttribute('x',f.x);f.el.setAttribute('y',f.y-(10+age*26)*s);f.el.setAttribute('font-size',13*s);f.el.setAttribute('stroke-width',3*s);f.el.style.opacity=age<.7?1:(1-age)/.3;return true})}
+}
+const rushCost=u=>carsN(u)*30000+60000;
+function renderMapCard(){
+  const el=$('#mapcard');if(!el)return;const sel=ui.mapSel;
+  if(!sel){el.hidden=true;el.innerHTML='';return}
+  if(sel.t==='unit'){
+    const u=S.units.find(x=>x.id===sel.id);if(!u||u.st==='order'||u.st==='depot'){ui.mapSel=null;el.hidden=true;return}
+    const c=C[u.cls],r=u.route?routeOf(S,u.route):null,rc=rushCost(u);
+    const line=u.st==='repair'?`<span class="bad">Broken down</span>${r?` on the ${r.to} line`:''}. Fitters get there in ${u.days} day${u.days===1?'':'s'}.`:u.st==='refurb'?`In the works for refurbishment. Back in ${u.days} days.`:r?`Running ${r.from} – ${r.to}. ${tripsPerDay(c,r)} trips a day.`:'';
+    el.innerHTML=`<div class="mc-head"><div><div class="kicker">Class ${c.id} ${c.name} · ${c.builder}</div><div class="cls-no">${unitName(u)}</div></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      ${sideView(u.cls,S.op,carsN(u))}
+      <div class="meta"><span>${carsN(u)} cars · ${seatsOf(u)} seats · ${c.mph} mph · built ${u.built}</span>${stars(Math.min(5,c.comfort+u.cb))}</div>
+      <p class="mc-line">${line} <span class="mute">Reliability ${Math.round(u.rel*100)}%.</span></p>
+      <div class="btns">${u.st==='repair'?`<button class="btn" data-a="rush" data-v="${u.id}" ${S.cash<rc?'disabled':''}>Rush a fitter out<small>${money(rc)} · back in service now</small></button>`:''}<button class="btn ghost" data-a="unit" data-v="${u.id}">Train details<small>Move, refurbish or sell</small></button><button class="btn ghost" data-a="yard" data-v="${u.cls}">Change carriages<small>Drag them between trains</small></button></div>`;
+  } else {
+    const r=routeOf(S,sel.id);if(!r){ui.mapSel=null;el.hidden=true;return}
+    if(!r.open){el.innerHTML=`<div class="mc-head"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      <p class="mc-line">Up for grabs: about ${r.demand.toLocaleString('en-GB')} journeys a day over ${r.mi} miles.</p>
+      <div class="btns"><button class="btn" data-a="openroute" data-v="${r.id}" ${S.cash<r.cost*1e6?'disabled':''}>Win the bid<small>£${r.cost}m · then add trains</small></button></div>`}
+    else{const t=r.t,act=routeUnits(S,r).length,load=t?t.load:0,prof=t?t.rev-t.cost:0;
+      el.innerHTML=`<div class="mc-head"><div class="rt-title"><span>${r.from}</span><span class="arrow">→</span><span>${r.to}</span></div><button class="x" data-a="msel" aria-label="Close">✕</button></div>
+      <div class="stats"><div class="stat"><span class="k">Trains</span><span class="v">${act}</span></div><div class="stat"><span class="k">On time</span><span class="v ${t&&act?tone(t.ppm,OPS[S.op].target,OPS[S.op].target-8):''}">${t&&act?Math.round(t.ppm)+'%':'—'}</span></div><div class="stat"><span class="k">Happy</span><span class="v ${tone(r.sat,70,50)}">${Math.round(r.sat)}%</span></div><div class="stat"><span class="k">Profit/day</span><span class="v ${prof<0?'bad':''}">${t?money(prof):'—'}</span></div></div>
+      <div><div class="row" style="font-size:12.5px;margin-bottom:4px"><span class="mute">Seats filled</span><span class="num">${t?Math.round(load*100)+'%':'—'}</span></div><div class="bar"><i class="${load>1.15?'bad':load>1?'warn':''}" style="width:${Math.min(100,load/1.5*100)}%"></i><span class="mark" style="left:${100/1.5}%"></span></div></div>
+      <div class="btns"><button class="btn" data-a="shopfor" data-v="${r.id}">Add a train<small>Buy one for this line</small></button><button class="btn ghost" data-a="route" data-v="${r.id}">Manage line<small>Trains and fares</small></button></div>`}
+  }
+  el.hidden=false;
+}
+function bindMap(){
+  const svg=$('#map');if(!svg)return;
+  const pts=new Map();let moved=0,last=null;
+  const rel=e=>{const b=svg.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top]};
+  svg.addEventListener('pointerdown',e=>{svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,rel(e));if(pts.size===1)moved=0;last=null});
+  svg.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId))return;const p=rel(e),prev=pts.get(e.pointerId);pts.set(e.pointerId,p);
+    if(pts.size===1){const dx=p[0]-prev[0],dy=p[1]-prev[1];moved+=Math.abs(dx)+Math.abs(dy);if(moved<6)return;const s=ui.vb.w/mapSize()[0];ui.vb.x-=dx*s;ui.vb.y-=dy*s;applyVB()}
+    else if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;moved+=99;
+      if(last){const s=ui.vb.w/mapSize()[0];ui.vb.x-=(mx-last.mx)*s;ui.vb.y-=(my-last.my)*s;zoomAt(d/last.d,mx,my)}last={d,mx,my}}
+  });
+  const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);last=null;
+    if(e.type==='pointerup'&&pts.size===0&&moved<8){
+      const [px,py]=rel(e),s=ui.mapS,wx=ui.vb.x+px*s,wy=ui.vb.y+py*s;
+      let best=null,bd=16*s;
+      for(const m of ui.mtr||[])for(const [x,y] of m.pos||[]){const dd=Math.hypot(x-wx,y-wy);if(dd<bd){bd=dd;best=m}}
+      if(best)ui.mapSel={t:'unit',id:best.u.id};
+      else{const hit=[...document.elementsFromPoint(e.clientX,e.clientY)].map(x=>x.closest&&x.closest('[data-mr]')).find(Boolean);ui.mapSel=hit?{t:'route',id:hit.dataset.mr}:null}
+      updateMap();
+    }};
+  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+  svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=rel(e);zoomAt(e.deltaY<0?1.2:1/1.2,x,y)},{passive:false});
+}
+window.addEventListener('resize',()=>{if(ui.tab==='map'){sizeMap();applyVB()}});
+
+/* ---------- Coupling yard (drag carriages between trains) ---------- */
+const MAXCARS=12,MINCARS=2;
+const carNewPrice=cls=>{const c=C[cls];return c.newPrice?Math.round(c.newPrice*1e6/c.cars*1.15/1000)*1000:null};
+const carUsedPrice=cls=>{const c=C[cls];return c.usedPrice?Math.round(c.usedPrice*1e6/c.cars*1.1/1000)*1000:null};
+const carDays=cls=>Math.max(30,Math.round(C[cls].deliv*.5));
+const carSellPrice=cls=>{const c=C[cls];return Math.round((c.usedPrice?c.usedPrice*1e6:c.newPrice*1e6*.5)/c.cars*.6/1000)*1000};
+function yardCar(cls,t){return `<svg class="ycs" viewBox="-1 0 82 63" aria-hidden="true">${sideCar(t,cls,LIV[S.op],80,0,false)}</svg>`}
+function yardHTML(){
+  const byC={},pool=S.pool||{};
+  S.units.filter(u=>u.st!=='order').forEach(u=>(byC[u.cls]=byC[u.cls]||[]).push(u));
+  Object.keys(pool).forEach(k=>{if(pool[k]>0&&!byC[k])byC[k]=[]});
+  return Object.keys(byC).sort((a,b)=>+a-+b).map(k=>{
+    const c=C[k],per=Math.round(c.seats/c.cars),pn=pool[k]||0;
+    const rows=byC[k].sort((a,b)=>a.n-b.n).map(u=>{
+      const lock=u.st==='repair'||u.st==='refurb',r=u.route?routeOf(S,u.route):null;
+      return `<div class="yrow${lock?' lock':''}" data-drop="u:${u.id}" data-cls="${k}"><div class="yhead"><span class="no">${unitName(u)}</span><span class="mute">${carsN(u)}-car · ${seatsOf(u)} seats${r?' · '+r.fc+'–'+r.tc:' · spare'}${lock?' · in the works':''}</span></div>
+        <div class="ycars">${carsOfUnit(u).map(t=>{const d=t==='M'&&!lock;return `<span class="ycar${d?' drag':''}"${d?` data-from="u:${u.id}"`:''}>${yardCar(k,t)}</span>`}).join('')}</div></div>`}).join('');
+    const np=carNewPrice(k),up=carUsedPrice(k),onOrder=(S.carOrders||[]).filter(o=>o.cls===k);
+    const buy=`<div class="btns">${np?`<button class="btn sm" data-a="buycar" data-v="${k}|new" ${S.cash<np?'disabled':''}>New carriage · ${money(np)}<small>Arrives in about ${carDays(k)} days</small></button>`:''}${up?`<button class="btn sm ${np?'ghost':''}" data-a="buycar" data-v="${k}|used" ${S.cash<up?'disabled':''}>Second-hand carriage · ${money(up)}<small>In the siding tomorrow</small></button>`:''}</div>`;
+    return `<section class="sec" id="yc-${k}"><div class="group-head"><span>Class ${k} ${c.name}</span><span class="mute" style="font-size:13px;font-weight:500">${per} seats a carriage</span></div>
+      ${buy}
+      <div class="list">${rows}
+      <div class="yrow pool" data-drop="p:${k}" data-cls="${k}"><div class="yhead"><span class="subhead">Spare carriages</span><span class="mute">${pn?`${pn} in the siding · ${money(pn*700)} a day to keep`:'Drop a carriage here to store it'}${onOrder.length?` · ${onOrder.length} on order (${Math.min(...onOrder.map(o=>o.days))}d)`:''}</span></div>
+      <div class="ycars">${pn?Array.from({length:pn},()=>`<span class="ycar drag" data-from="p:${k}">${yardCar(k,'M')}</span>`).join(''):'<span class="yempty">Empty siding</span>'}</div>${pn?`<div class="btns"><button class="btn sm ghost" data-a="sellcar" data-v="${k}">Sell a spare carriage<small>${money(carSellPrice(k))}</small></button></div>`:''}</div></div></section>`;
+  }).join('');
+}
+function moveCarriage(from,to,cls){
+  const [ft,fid]=from.split(':'),[tt,tid]=to.split(':');S.pool=S.pool||{};
+  let src=null,dst=null;
+  if(ft==='u'){src=S.units.find(u=>u.id===fid);if(!src||carsN(src)<=MINCARS){toast('A train needs at least two carriages.');return}}
+  else if(!(S.pool[cls]>0))return;
+  if(tt==='u'){dst=S.units.find(u=>u.id===tid);if(!dst)return;if(carsN(dst)>=MAXCARS){toast(`${unitName(dst)} is already 12 cars. The platforms aren't any longer.`);return}}
+  if(src)src.cars=carsN(src)-1;else S.pool[cls]--;
+  if(dst)dst.cars=carsN(dst)+1;else S.pool[cls]=(S.pool[cls]||0)+1;
+  toast(dst?`Coupled up: ${unitName(dst)} is now ${carsN(dst)} cars, ${seatsOf(dst)} seats.`:'Carriage shunted into the siding.');
+  if(dst&&carsN(dst)>C[cls].cars)unlock(S,'stretch');
+  save();const y=scrollY;renderMain();scrollTo(0,y);
+  if(dst){const row=document.querySelector(`[data-drop="u:${dst.id}"]`);if(row){row.classList.add('bump');setTimeout(()=>row.classList.remove('bump'),500)}}
+}
+let drag=null;
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('.ycar.drag');if(!el||!S)return;
+  if(e.pointerType==='mouse')e.preventDefault();
+  drag={el,from:el.dataset.from,x:e.clientX,y:e.clientY,on:false,cls:el.closest('[data-cls]').dataset.cls,id:e.pointerId};});
+document.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;drag.on=true;
+    const g=drag.el.cloneNode(true);g.className='drag-ghost';document.body.appendChild(g);drag.g=g;
+    drag.el.classList.add('lifted');document.body.classList.add('dragging');
+    document.querySelectorAll('[data-drop]').forEach(t=>{const ok=t.dataset.cls===drag.cls&&t.dataset.drop!==drag.from&&!t.classList.contains('lock');t.classList.toggle('valid',ok);t.classList.toggle('nope',!ok)});}
+  e.preventDefault();
+  drag.g.style.transform=`translate(${e.clientX-24}px,${e.clientY-34}px) rotate(-4deg)`;
+  const t=document.elementFromPoint(e.clientX,e.clientY),tgt=t&&t.closest('[data-drop].valid');
+  document.querySelectorAll('.over').forEach(x=>{if(x!==tgt)x.classList.remove('over')});if(tgt)tgt.classList.add('over');drag.tgt=tgt;
+  if(e.clientY>innerHeight-150)scrollBy(0,10);else if(e.clientY<170)scrollBy(0,-10);
+},{passive:false});
+const endDrag=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;
+  if(d.g)d.g.remove();document.body.classList.remove('dragging');
+  document.querySelectorAll('.valid,.nope,.over,.lifted').forEach(x=>x.classList.remove('valid','nope','over','lifted'));
+  if(d.on&&d.tgt&&e.type==='pointerup')moveCarriage(d.from,d.tgt.dataset.drop,d.cls);
+};
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+
+/* ---------- Goals / more ---------- */
+function moreHTML(){
+  const op=OPS[S.op];
+  return `
+  <section class="sec"><h2>Goals</h2><div class="panel">${ACH.map(([id,n,d])=>`<div class="goal ${S.ach[id]?'done':''}"><span class="tick">${S.ach[id]?'✓':''}</span><span><b>${n}</b><p>${d}</p></span></div>`).join('')}</div></section>
+  <section class="sec"><h2>DfT period reports</h2><div class="panel">${S.reports.length?`<div class="report"><div class="mute">Period</div><div class="mute">PPM · Happy · Profit</div>${S.reports.map(p=>`<div>P${p.pno} ${p.yr}/${String((p.yr+1)%100).padStart(2,'0')}${p.bad?' <span class="tag bad">Warning</span>':''}</div><div><span class="${p.ppm>=p.target?'good':'bad'}">${p.ppm.toFixed(1)}%</span> · ${Math.round(p.sat)}% · ${money(p.profit)}</div>`).join('')}</div>`:'<p class="mute" style="margin:0">Your first review is at the end of this 28-day period.</p>'}</div></section>
+  <section class="sec"><h2>How it works</h2><div class="panel prose">
+   <p>Every 28 days the DfT reviews your <b>PPM</b> (the share of trains arriving on time) and passenger satisfaction. Fall more than 6 points under the ${op.target}% target, drop below 50% satisfaction, or end a period overdrawn, and you get a warning. Three warnings and your services are handed to Great British Railways. Good periods clear a warning.</p>
+   <ul>
+    <li>Crowded trains make people late and cross. Add units where seats-filled goes red.</li>
+    <li>Any train can run anywhere. Big trains carry more people; fast trains do more trips on long routes.</li>
+    <li>Old units break down more. Refurbish them or replace them.</li>
+    <li>Spare units in the depot still cost money every day.</li>
+    <li>Leaves fall in October. Snow freezes the points in winter. Nothing runs on Christmas Day.</li>
+   </ul></div></section>
+  <section class="sec"><h2>Game</h2><div class="panel sec">
+   <div class="row"><span>Best cash balance</span><b class="num">${money(S.best.cash)}</b></div>
+   <div class="row"><span>Best period PPM</span><b class="num">${S.best.ppm?S.best.ppm.toFixed(1)+'%':'—'}</b></div>
+   <div class="btns">${ui.confirm==='reset'?`<button class="btn danger" data-a="reset">Yes, abandon ${op.short}<small>Your save will be wiped</small></button><button class="btn ghost" data-a="unconfirm">Keep playing</button>`:`<button class="btn ghost" data-a="confirm" data-v="reset">Start a new game<small>Pick a different operator</small></button>`}</div>
+   <p class="mute" style="margin:0;font-size:12.5px">Progress saves in this browser. Unofficial fan game, not affiliated with any operator. Figures are approximate.</p>
+  </div></section>`;
+}
+
+/* ---------- modals ---------- */
+function reportModal(s,p){
+  const op=OPS[s.op];
+  const verdict=p.bad?(p.strikes>=2?'Final warning. One more bad period and the Secretary of State takes your keys.':'The DfT has issued a formal warning.'):p.good?(p.before>p.strikes?'Good period. One warning wiped from your record.':'Solid period. The DfT is pleased, in its own quiet way.'):'Acceptable. Nobody at the DfT is writing memos about you. Yet.';
+  return {kicker:`DfT review · Period ${p.pno} ${p.yr}/${String((p.yr+1)%100).padStart(2,'0')}`,title:p.bad?'Warning issued':p.good?'Target met':'Passable period',body:`
+   <div class="report">
+    <div>PPM</div><div class="${p.ppm>=p.target?'good':'bad'}">${p.ppm.toFixed(1)}% <span class="mute">/ ${p.target}%</span></div>
+    <div>Satisfaction</div><div class="${tone(p.sat,70,50)}">${Math.round(p.sat)}%</div>
+    <div>Passengers</div><div>${(p.pax/1e6).toFixed(2)}m</div>
+    <div>Fare revenue</div><div>${money(p.rev)}</div>
+    <div>Costs</div><div>${money(-p.cost)}</div>
+    <div class="mute">incl. Delay Repay</div><div class="mute">${money(-p.repay)}</div>
+    <div>DfT performance payment</div><div class="${p.pay>=0?'good':'bad'}">${p.pay>=0?'+':''}${money(p.pay)}</div>
+    <div><b>Period result</b></div><div class="${p.profit>=0?'good':'bad'}">${money(p.profit)}</div>
+    <div>Warnings</div><div class="${p.strikes?'bad':''}">${p.strikes} of 3</div>
+   </div><p>${verdict}</p>${p.pno===13?`<p class="good">That's a full rail year survived with ${op.short}.</p>`:''}`,choices:[{label:'Back to work',fn:()=>{}}]};
+}
+function gameOverModal(s){
+  const op=OPS[s.op];
+  return {kicker:'Operator of last resort',title:s.over==='bust'?'Out of money':'Your services have been taken over',body:s.over==='bust'?`<p>${op.name} ran more than £25m into the red. The administrators have arrived, and they've brought clipboards.</p>`:`<p>After three DfT warnings, the Secretary of State has transferred ${op.name}'s services to Great British Railways. Your desk is being cleared as we speak.</p>`
+   +`<p class="mute">You lasted ${s.periods} rail period${s.periods===1?'':'s'} (${s.day} days) with a best cash balance of ${money(s.best.cash)}.</p>`,choices:[{label:'Try again',sub:'Pick an operator',fn:()=>{S=null;save();ui.tab='map';renderAll()}}]};
+}
+function showModal(){
+  if(ui.modal||!ui.modalQ.length){if(!ui.modal)$('#modal').innerHTML='';return}
+  ui.modal=ui.modalQ.shift();const m=ui.modal;
+  $('#modal').innerHTML=`<div class="overlay center"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="kicker">${m.kicker||''}</div><h3 id="mt">${m.title}</h3><div class="sec">${m.body||''}</div>
+    <div class="choices">${m.choices.map((c,i)=>`<button class="btn ${i?'ghost':''}" data-a="choice" data-v="${i}" ${c.disabled?'disabled':''}>${c.label}${c.sub?`<small>${c.sub}</small>`:''}</button>`).join('')}</div></div></div>`;
+  const b=$('#modal .btn:not([disabled])');if(b)b.focus({preventScroll:true});
+}
+
+/* ---------- sheet ---------- */
+function renderSheet(){
+  const el=$('#sheet');
+  if(!ui.sheet||!S){el.innerHTML='';return}
+  let html='';
+  if(ui.sheet.t==='route'){const r=routeOf(S,ui.sheet.id);if(!r){ui.sheet=null;el.innerHTML='';return}html=routeSheet(r)}
+  else {const u=S.units.find(x=>x.id===ui.sheet.id);if(!u){ui.sheet=null;el.innerHTML='';return}html=unitSheet(u)}
+  const prev=el.querySelector('.sheet'),sc=prev?prev.scrollTop:0;
+  el.innerHTML=`<div class="overlay" data-a="backdrop"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  el.querySelector('.sheet').scrollTop=sc;
+}
+
+/* ---------- render ---------- */
+function renderMain(){
+  if(!S){renderChooser();return}
+  ({map:renderMap,routes:renderRoutes,fleet:renderFleet,shop:renderShop,office:renderOffice}[ui.tab]||renderMap)();
+}
+function renderAll(){
+  const has=!!S;
+  $('#top').hidden=!has;$('#tabs').hidden=!has;
+  if(has){renderTop();renderTabs()}
+  renderMain();renderSheet();
+}
+function tickRender(){
+  if(!S)return;
+  renderTop();renderTabs();
+  if(ui.ptr){ui.dirty=true;return}
+  if(ui.tab==='office')updateHQ();
+  else if(ui.tab==='map')updateMap();
+  else {const y=window.scrollY;renderMain();window.scrollTo(0,y)}
+  if(ui.sheet&&!ui.ptr)renderSheet();
+  ui.dirty=false;
+}
+
+/* ---------- actions ---------- */
+function assign(uid,rid){
+  const u=S.units.find(x=>x.id===uid),r=routeOf(S,rid);if(!u||!r)return;
+  u.route=rid;if(u.st==='depot')u.st='active';
+  toast(`${unitName(u)} now runs ${r.fc} – ${r.tc}.`);
+}
+const A={
+ pickop:v=>{ui.pickOp=v;renderChooser();const p=document.querySelector('.panel.sec');if(p)p.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},
+ start:()=>{S=newGame(ui.pickOp);ui.vb=null;ui.mapSel=null;S.speed=1;ui.tab='map';ui.segs={};ui.sheet=null;save();renderAll();window.scrollTo(0,0);
+   const op=OPS[S.op];
+   EMIT.modal({kicker:'Day one',title:`You run ${op.name} now`,body:`<p>The DfT wants ${op.target}% of trains on time and passengers who don't hate you. They check every 28 days. Three bad reviews and Great British Railways takes over.</p><p><b>First job:</b> red bubbles on the map mean people are being left on the platform. Tap one and add a train.</p><p>Tap any train to see it up close. If one breaks down, you can pay to rush a fitter out.</p><p class="mute">Any train can run on any of your lines. Fast trains suit long routes; big trains suit crowded commuter lines.</p>`,choices:[{label:'Get the trains moving',fn:()=>{}}]});},
+ tab:v=>{ui.tab=v;ui.confirm=null;if(v!=='shop'&&ui.shopF.startsWith('route:'))ui.shopF='all';renderAll();window.scrollTo(0,0)},
+ speed:v=>{S.speed=+v;renderTop()},
+ route:v=>{ui.sheet={t:'route',id:v};ui.confirm=null;renderSheet()},
+ unit:v=>{ui.sheet={t:'unit',id:v};ui.confirm=null;renderSheet()},
+ close:()=>{ui.sheet=null;ui.confirm=null;renderSheet()},
+ backdrop:(v,el,e)=>{if(e.target===el){A.close()}},
+ assign:v=>{const [u,r]=v.split('|');assign(u,r);save();renderAll()},
+ unassign:v=>{const u=S.units.find(x=>x.id===v);if(u){u.route=null;if(u.st==='active')u.st='depot';toast(`${unitName(u)} sent to the depot.`)}save();renderAll()},
+ confirm:v=>{ui.confirm=v;ui.sheet?renderSheet():renderMain()},
+ unconfirm:()=>{ui.confirm=null;ui.sheet?renderSheet():renderMain()},
+ sell:v=>{const u=S.units.find(x=>x.id===v);if(!u)return;const sv=sellValue(u);S.cash+=sv;S.units=S.units.filter(x=>x!==u);news(S,`${unitName(u)} sold for ${money(sv)}.`,'');toast(`Sold ${unitName(u)} for ${money(sv)}.`);checkAch(S);ui.sheet=null;ui.confirm=null;save();renderAll()},
+ refurb:v=>{const u=S.units.find(x=>x.id===v);if(!u)return;const c=refurbCost(u);if(S.cash<c)return;S.cash-=c;u.st='refurb';u.days=14;u.cb+=.5;u.rel=Math.max(u.rel,Math.min(.97,C[u.cls].rel+.02));toast(`${unitName(u)} off for refurbishment.`);save();renderAll()},
+ buynew:v=>{const c=C[v],p=c.newPrice*1e6;if(S.cash<p)return;S.cash-=p;const fr=ui.shopF.startsWith('route:')?ui.shopF.slice(6):null;
+   const u=addUnit(S,v,{fresh:true,built:dateOf(S.day).getUTCFullYear()+Math.floor(c.deliv/365),st:'order',days:c.deliv+rint(-10,25),route:fr});
+   news(S,`Ordered a new Class ${v} ${c.name} (${unitName(u)}) from ${c.builder}.`,'');toast(`Ordered ${unitName(u)}. Due in about ${c.deliv} days.`);save();ui.sheet={t:'unit',id:u.id};renderAll()},
+ buyused:v=>{const c=C[v],p=c.usedPrice*1e6;if(S.cash<p)return;S.cash-=p;const age=rint(0,Math.min(12,Math.max(0,2027-c.year)));
+   const u=addUnit(S,v,{built:c.year+Math.max(0,Math.min(age,2026-c.year))});u.st='depot';
+   const fr=ui.shopF.startsWith('route:')?ui.shopF.slice(6):null;if(fr)assign(u.id,fr);
+   news(S,`Bought second-hand ${unitName(u)}, built ${u.built}.`,'');unlock(S,'first_used');checkAch(S);if(!fr)toast(`${unitName(u)} is in the depot. Pick a route for it.`);save();ui.sheet={t:'unit',id:u.id};renderAll()},
+ shopfor:v=>{ui.shopF='route:'+v;ui.tab='shop';ui.sheet=null;renderAll();window.scrollTo(0,0)},
+ mz:v=>{const [w,h]=mapSize();zoomAt(+v,w/2,h/2)},
+ mfit:v=>{v==='gb'?fitGB():fitNetwork();applyVB()},
+ msel:()=>{ui.mapSel=null;updateMap()},
+ rush:v=>{const u=S.units.find(x=>x.id===v);if(!u||u.st!=='repair')return;const c=rushCost(u);if(S.cash<c)return;S.cash-=c;u.st=u.route?'active':'depot';u.days=0;news(S,`Fitter rushed out to ${unitName(u)}. Moving again.`,'good');toast(`${unitName(u)} is moving again.`);save();renderTop();updateMap()},
+ shopf:v=>{ui.shopF=v;renderMain()},
+ fleetf:v=>{ui.fleetF=v;renderMain()},
+ fleetv:v=>{ui.fleetView=v;renderMain()},
+ buycar:v=>{const [cls,kind]=v.split('|');const p=kind==='new'?carNewPrice(cls):carUsedPrice(cls);if(!p||S.cash<p)return;S.cash-=p;S.pool=S.pool||{};
+   if(kind==='new'){S.carOrders=S.carOrders||[];S.carOrders.push({cls,days:carDays(cls)});news(S,`Ordered a new Class ${cls} carriage from ${C[cls].builder}.`,'');toast(`Carriage ordered. It'll arrive in the siding in about ${carDays(cls)} days.`)}
+   else{S.pool[cls]=(S.pool[cls]||0)+1;news(S,`Bought a second-hand Class ${cls} carriage.`,'');toast('Carriage in the siding. Drag it onto a train.')}
+   save();renderTop();const y=scrollY;renderMain();scrollTo(0,y)},
+ sellcar:v=>{S.pool=S.pool||{};if(!(S.pool[v]>0))return;const p=carSellPrice(v);S.pool[v]--;S.cash+=p;toast(`Spare carriage sold for ${money(p)}.`);save();renderTop();const y=scrollY;renderMain();scrollTo(0,y)},
+ yard:v=>{ui.fleetView='yard';ui.tab='fleet';ui.sheet=null;renderAll();const el=document.getElementById('yc-'+v);if(el)el.scrollIntoView({block:'start'});else scrollTo(0,0)},
+ openroute:v=>{const r=routeOf(S,v);if(!r||S.cash<r.cost*1e6)return;S.cash-=r.cost*1e6;r.open=true;r.sat=72;news(S,`Bid won: ${r.from} – ${r.to} is yours. Get some trains on it.`,'good');unlock(S,'expand');save();ui.sheet={t:'route',id:r.id};renderAll()},
+ choice:v=>{const m=ui.modal;if(!m)return;const c=m.choices[+v];ui.modal=null;$('#modal').innerHTML='';try{c.fn&&c.fn()}catch(e){console.error(e)}if(S)checkAch(S);save();showModal();if(S)tickRender();},
+ reset:()=>{S=null;ui.confirm=null;ui.sheet=null;ui.modal=null;ui.modalQ=[];$('#modal').innerHTML='';save();renderAll();window.scrollTo(0,0)},
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el||el.disabled)return;const f=A[el.dataset.a];if(f)f(el.dataset.v,el,e)});
+document.addEventListener('input',e=>{const t=e.target;if(t.type==='range'&&t.dataset.r&&S){const r=routeOf(S,t.dataset.r);r.fare=Math.round(+t.value*100)/100;const l=$('#farelbl');if(l)l.textContent=fareLabel(r)}});
+document.addEventListener('change',e=>{if(e.target.type==='range')save()});
+document.addEventListener('pointerdown',()=>{ui.ptr=true},true);
+const up=()=>{ui.ptr=false;if(ui.dirty)setTimeout(()=>{if(!ui.ptr&&ui.dirty)tickRender()},250)};
+document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',up,true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.sheet)A.close()});
+
+/* ---------- loop ---------- */
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+function frame(ts){
+  const dt=ui.last?Math.min(250,ts-ui.last):0;ui.last=ts;
+  if(S&&!paused()){
+    ui.acc+=dt*S.speed;
+    if(ui.acc>=DAY_MS){ui.acc-=DAY_MS;if(ui.acc>DAY_MS)ui.acc=0;simDay(S);checkAch(S);save();tickRender()}
+  }
+  ui.frac=S?ui.acc/DAY_MS:0;
+  const p=$('#dayprog');if(p)p.style.width=(ui.frac*100)+'%';
+  if(S&&ui.tab==='office'){
+    ui.boardT+=dt;if(ui.boardT>500){ui.boardT=0;updateBoard()}
+    if(ui.pips&&!reduce.matches){const hrs=ui.frac*19;for(const el of ui.pips){const tt=+el.dataset.tt,ph=((hrs/tt)+(+el.dataset.o))%2;el.style.left=((ph<1?ph:2-ph)*96+2)+'%'}}
+    else if(ui.pips){for(const el of ui.pips){el.style.left=(+el.dataset.o/2*96+2)+'%'}}
+  }
+  if(S&&ui.tab==='map'&&ui.mtr&&(!paused()||(ui.fx&&ui.fx.length)))moveTrains();
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange',()=>{ui.last=0;if(document.hidden)save()});
+
+/* ---------- boot ---------- */
+function start(data){
+  S=(data&&data.S)||load();
+  if(data&&data.ui&&TABN[data.ui.tab])ui.tab=data.ui.tab;
+  ui.frac=0;renderAll();requestAnimationFrame(frame);
+}
+window.claude?.hot?.snapshot?.(()=>({S,ui:{tab:ui.tab}}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+window.__rt={get S(){return S},simDay,newGame,OPS,C,set S(v){S=v},ui,A};
+</script>
